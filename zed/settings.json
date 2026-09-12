@@ -34,6 +34,7 @@
   "ui_font_size": 16,
   // "buffer_font_family": "Maple Mono NF",
   "buffer_font_family": "Comic Code Ligatures",
+  "buffer_font_fallbacks": ["Maple Mono NF"],
   "buffer_font_size": 18,
   "buffer_line_height": {
     "custom": 1.7,
@@ -73,7 +74,7 @@
       "provider": "openai-subscribed",
       "model": "gpt-5.6-sol",
       "enable_thinking": true,
-      "effort": "high"
+      "effort": "high",
     },
     "dock": "right",
     "favorite_models": [],
@@ -112,8 +113,8 @@
     // "font_family": "Maple Mono NF",
     "font_family": "Comic Code Ligatures",
     "font_fallbacks": ["Maple Mono NF"],
-    "line_height" : {
-      "custom": 1.7
-    }
+    "line_height": {
+      "custom": 1.7,
+    },
   },
 }
