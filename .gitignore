@@ -6,14 +6,10 @@ neofetch
 nvim-back
 qBittorrent
 raycast
-skhd-bak
-spicetify
 wireshark
 ytmdl
-yabai-bak
 QtProject
 fontforge
-wezterm
 htop
 zed/.*
 .DS_Store
@@ -24,5 +20,4 @@ zed/keymap_backup.json
 zed/settings_backup.json
 zsh/secrets.zsh
 tmux/plugins
-nvim-backup-*
 .omx
