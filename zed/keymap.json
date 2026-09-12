@@ -173,8 +173,21 @@
     // Center terminals participate in the same pane navigation as editor tabs.
     "context": "Terminal",
     "bindings": {
+      // Ctrl-w is the terminal gateway to workspace commands.
+      // Short aliases retained for quick access.
       "ctrl-w space": "file_finder::Toggle",
       "ctrl-w ,": "tab_switcher::ToggleAll",
+
+      // Command palette and mirrors of normal-mode leader bindings.
+      "ctrl-w :": "command_palette::Toggle",
+      "ctrl-w space space": "file_finder::Toggle",
+      "ctrl-w space f f": "file_finder::Toggle",
+      "ctrl-w space f r": "projects::OpenRecent",
+      "ctrl-w space f n": "workspace::NewFile",
+      "ctrl-w space ,": "tab_switcher::ToggleAll",
+      "ctrl-w space e": "project_panel::ToggleFocus",
+
+      // Pane navigation.
       "ctrl-w w": "workspace::ActivateNextPane",
       "ctrl-w p": "workspace::ActivatePreviousPane",
       "ctrl-w h": "workspace::ActivatePaneLeft",
