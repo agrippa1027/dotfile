@@ -7,7 +7,8 @@
     "allow_data_collection": "yes",
     "provider": "zed",
   },
-  "ui_font_family": "Maple Mono NF",
+  // "ui_font_family": "Maple Mono NF",
+  "ui_font_family": "Comic Code Ligatures",
   "prettier": {
     "allowed": true,
   },
@@ -31,7 +32,8 @@
   //  FONTS
   // ============================================================
   "ui_font_size": 16,
-  "buffer_font_family": "Maple Mono NF",
+  // "buffer_font_family": "Maple Mono NF",
+  "buffer_font_family": "Comic Code Ligatures",
   "buffer_font_size": 18,
   "buffer_line_height": {
     "custom": 1.7,
@@ -67,6 +69,12 @@
     "dock": "left",
   },
   "agent": {
+    "default_model": {
+      "provider": "openai-subscribed",
+      "model": "gpt-5.6-sol",
+      "enable_thinking": true,
+      "effort": "high"
+    },
     "dock": "right",
     "favorite_models": [],
     "model_parameters": [],
@@ -101,6 +109,11 @@
   // ============================================================
   // Terminals open in center panes via `workspace::NewCenterTerminal`.
   "terminal": {
-    "font_family": "Maple Mono NF",
+    // "font_family": "Maple Mono NF",
+    "font_family": "Comic Code Ligatures",
+    "font_fallbacks": ["Maple Mono NF"],
+    "line_height" : {
+      "custom": 1.7
+    }
   },
 }

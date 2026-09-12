@@ -1,6 +1,4 @@
 configstore
-filezilla
-fish
 github-copilot
 gtk-2.0
 jgit
@@ -15,10 +13,6 @@ ytmdl
 yabai-bak
 QtProject
 fontforge
-nvim.bak
-nvim2.bak
-rstudio
-yazi
 wezterm
 htop
 zed/.*
