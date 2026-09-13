@@ -1,0 +1,17 @@
+[
+  {
+    "label": "Dired: Browse Files",
+    "command": "/Users/afsalahamed/.local/bin/dire-zed",
+    "args": ["${ZED_DIRNAME:/Users/afsalahamed}"],
+    "shell": {
+      "program": "/bin/zsh"
+    },
+    "reveal": "always",
+    "hide": "on_success",
+    "show_summary": false,
+    "show_command": false,
+    "save": "none",
+    "allow_concurrent_runs": false,
+    "use_new_terminal": true
+  }
+]

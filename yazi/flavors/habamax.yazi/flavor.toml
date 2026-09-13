@@ -1,0 +1,85 @@
+#:schema https://yazi-rs.github.io/schemas/theme.json
+
+[mgr]
+cwd = { fg = "#87afaf" }
+find_keyword = { fg = "#d7af87", italic = true }
+find_position = { fg = "#d75f87", bg = "reset", italic = true }
+marker_selected = { fg = "#87afaf", bg = "#87afaf" }
+marker_copied = { fg = "#d7af87", bg = "#d7af87" }
+marker_cut = { fg = "#af5f5f", bg = "#af5f5f" }
+border_symbol = "|"
+border_style = { fg = "#767676" }
+
+[tabs]
+active = { fg = "#bcbcbc", bg = "#1c1c1c" }
+inactive = { fg = "#9e9e9e", bg = "#262626" }
+
+[indicator]
+current = { fg = "#bcbcbc", bg = "#262626" }
+preview = { underline = true }
+
+[mode]
+normal_main = { fg = "#1c1c1c", bg = "#87afaf", bold = true }
+normal_alt = { fg = "#87afaf", bg = "#262626" }
+select_main = { fg = "#1c1c1c", bg = "#d7af87", bold = true }
+select_alt = { fg = "#d7af87", bg = "#262626" }
+unset_main = { fg = "#bcbcbc", bg = "#af5f5f", bold = true }
+unset_alt = { fg = "#af5f5f", bg = "#262626" }
+
+[status]
+sep_left = { open = "", close = "" }
+sep_right = { open = "", close = "" }
+progress_label = { fg = "#bcbcbc", bold = true }
+progress_normal = { fg = "#1c1c1c", bg = "#303030" }
+progress_error = { fg = "#af5f5f", bg = "#303030" }
+perm_type = { fg = "#5f8787" }
+perm_read = { fg = "#d7af87" }
+perm_write = { fg = "#af5f5f" }
+perm_exec = { fg = "#87afaf" }
+perm_sep = { fg = "#767676" }
+
+[input]
+border = { fg = "#767676" }
+title = {}
+value = {}
+selected = { reversed = true }
+
+[pick]
+border = { fg = "#767676" }
+active = { fg = "#d75f87" }
+inactive = {}
+
+[tasks]
+border = { fg = "#767676" }
+title = {}
+hovered = { underline = true }
+
+[which]
+mask = { bg = "#303030" }
+cand = { fg = "#87afaf" }
+rest = { fg = "#9e9e9e" }
+desc = { fg = "#d75f87" }
+separator = " -> "
+separator_style = { fg = "#767676" }
+
+[help]
+border = { fg = "#767676" }
+chord = { fg = "#d75f87" }
+action = { fg = "#9e9e9e" }
+hovered = { bg = "#303030", bold = true }
+
+[filetype]
+rules = [
+  { mime = "image/*", fg = "#87afaf" },
+  { mime = "video/*", fg = "#d7af87" },
+  { mime = "audio/*", fg = "#d7af87" },
+  { mime = "application/zip", fg = "#d75f87" },
+  { mime = "application/gzip", fg = "#d75f87" },
+  { mime = "application/x-tar", fg = "#d75f87" },
+  { mime = "application/x-bzip", fg = "#d75f87" },
+  { mime = "application/x-bzip2", fg = "#d75f87" },
+  { mime = "application/x-7z-compressed", fg = "#d75f87" },
+  { mime = "application/x-rar", fg = "#d75f87" },
+  { url = "*", fg = "#bcbcbc" },
+  { url = "*/", fg = "#87afaf" },
+]

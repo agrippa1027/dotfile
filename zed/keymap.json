@@ -20,6 +20,10 @@
       // navigation / pickers
       "space space": "file_finder::Toggle",
       "space f f": "file_finder::Toggle",
+      "space f d": [
+        "task::Spawn",
+        { "task_name": "Dired: Browse Files", "reveal_target": "center" },
+      ],
       "space f r": "projects::OpenRecent",
       "space f n": "workspace::NewFile",
       "space ,": "tab_switcher::ToggleAll",
@@ -135,6 +139,10 @@
       // finders / pickers
       "space space": "file_finder::Toggle",
       "space f f": "file_finder::Toggle",
+      "space f d": [
+        "task::Spawn",
+        { "task_name": "Dired: Browse Files", "reveal_target": "center" },
+      ],
       "space f r": "projects::OpenRecent",
       "space f n": "workspace::NewFile",
       "space ,": "tab_switcher::ToggleAll",

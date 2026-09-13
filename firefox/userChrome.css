@@ -1,0 +1,6 @@
+/* Use Fira Code throughout the Firefox interface. */
+:root,
+* {
+  font-family: "Fira Code", monospace !important;
+  font-variant-ligatures: contextual;
+}
