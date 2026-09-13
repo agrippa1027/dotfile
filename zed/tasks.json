@@ -12,6 +12,6 @@
     "show_command": false,
     "save": "none",
     "allow_concurrent_runs": false,
-    "use_new_terminal": true
+    "use_new_terminal": false
   }
 ]
