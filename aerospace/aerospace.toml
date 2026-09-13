@@ -80,11 +80,10 @@ alt-tab = 'workspace-back-and-forth'
 alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
 
 alt-f = 'fullscreen'
-cmd-enter = 'exec-and-forget open -na "Ghostty"'
-# cmd-shift-enter = 'exec-and-forget open -na "Kitty"'
+# cmd-enter = 'exec-and-forget open -na "Ghostty"'
 cmd-alt-enter = 'exec-and-forget open -na "Ghostty" --args -e tmux new-session -A -s Work'
-alt-z = 'exec-and-forget open -na "Zed"'
-alt-b = 'exec-and-forget open -na "Firefox"'
+cmd-enter = 'exec-and-forget open -na "Zed"'
+cmd-shift-enter = 'exec-and-forget open -na "Firefox"'
 
 alt-shift-semicolon = 'mode service'
 
