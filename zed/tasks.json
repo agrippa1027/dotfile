@@ -1,7 +1,7 @@
 [
   {
     "label": "Dired: Browse Files",
-    "command": "/Users/afsalahamed/.local/bin/dire-zed",
+    "command": "/Users/afsalahamed/.config/zed/scripts/dire-zed",
     "args": ["${ZED_DIRNAME:/Users/afsalahamed}"],
     "shell": {
       "program": "/bin/zsh"

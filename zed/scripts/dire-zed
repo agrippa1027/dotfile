@@ -1,0 +1,65 @@
+#!/bin/sh
+
+set -u
+
+nnn_bin=${DIRE_ZED_NNN_BIN:-/opt/homebrew/bin/nnn}
+zed_bin=${DIRE_ZED_ZED_BIN:-/usr/local/bin/zed}
+
+if [ ! -x "$nnn_bin" ]; then
+    printf 'dire-zed: nnn is not executable: %s\n' "$nnn_bin" >&2
+    exit 127
+fi
+
+if [ ! -x "$zed_bin" ]; then
+    printf 'dire-zed: Zed CLI is not executable: %s\n' "$zed_bin" >&2
+    exit 127
+fi
+
+home_directory=${HOME:-/}
+if [ ! -d "$home_directory" ]; then
+    home_directory=/
+fi
+
+start_directory=${1:-$home_directory}
+if [ ! -d "$start_directory" ]; then
+    start_directory=$home_directory
+fi
+
+selection_file=$(mktemp -t dire-zed-choice.XXXXXX) || {
+    printf 'dire-zed: could not create selection file\n' >&2
+    exit 1
+}
+
+# These functions are invoked indirectly by trap.
+# shellcheck disable=SC2329
+cleanup() {
+    rm -f -- "$selection_file"
+}
+
+# shellcheck disable=SC2329
+handle_signal() {
+    trap - 0 HUP INT TERM
+    cleanup
+    exit 130
+}
+
+trap cleanup 0
+trap handle_signal HUP INT TERM
+
+if "$nnn_bin" -0 -C -p "$selection_file" "$start_directory"; then
+    :
+else
+    status=$?
+    exit "$status"
+fi
+
+if [ ! -s "$selection_file" ]; then
+    exit 0
+fi
+
+# Keep the already-open file descriptor readable after unlinking the temporary
+# pathname, then replace this shell with a single Zed handoff process.
+exec 3< "$selection_file"
+cleanup
+trap - 0 HUP INT TERM
+exec /usr/bin/xargs -0 "$zed_bin" -a <&3
