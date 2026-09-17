@@ -294,8 +294,8 @@
   {
     "context": "Editor && multibuffer",
     "bindings": {
-      "ctrl-j": "editor::MoveToStartOfNextExcerpt",
-      "ctrl-k": "editor::MoveToStartOfExcerpt",
+      "ctrl-n": "editor::MoveToStartOfNextExcerpt",
+      "ctrl-p": "editor::MoveToStartOfExcerpt",
     },
   },
 ]
