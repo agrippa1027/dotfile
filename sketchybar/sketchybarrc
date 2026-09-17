@@ -1,0 +1,26 @@
+#!/bin/bash
+set -eu
+export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export CONFIG_DIR="${CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/sketchybar}"
+
+[[ -f "$CONFIG_DIR/runtime/sketchybar.so" ]] || {
+  echo 'SbarLua is missing: run ~/.config/scripts/install-sketchybar-lua.sh' >&2
+  exit 1
+}
+
+# Reload replaces this config's event loop, keeping a single Lua process.
+pid_file="$CONFIG_DIR/runtime/lua.pid"
+if [[ -r "$pid_file" ]]; then
+  read -r previous_pid < "$pid_file"
+  if [[ "$previous_pid" =~ ^[0-9]+$ ]] && kill -0 "$previous_pid" 2>/dev/null; then
+    previous_command="$(ps -p "$previous_pid" -o command=)"
+    if [[ "$previous_command" == *"lua $CONFIG_DIR/init.lua"* ]]; then
+      kill "$previous_pid"
+    fi
+  fi
+fi
+
+sketchybar --load-font "$CONFIG_DIR/vendor/app-font/sketchybar-app-font.ttf"
+printf '%s\n' "$$" > "$pid_file"
+cd "$CONFIG_DIR"
+exec /opt/homebrew/bin/lua "$CONFIG_DIR/init.lua"

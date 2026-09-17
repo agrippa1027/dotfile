@@ -21,5 +21,6 @@ zed/settings_backup.json
 zsh/secrets.zsh
 tmux/plugins
 .omx
+sketchybar/runtime/
 
 nnn/.lastd

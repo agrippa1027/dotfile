@@ -28,7 +28,11 @@ assert_contains() {
 
 require_file 'AeroSpace config' "$config_root/aerospace/aerospace.toml"
 require_file 'Ghostty config' "$config_root/ghostty/config"
-require_file 'Kitty config' "$config_root/kitty/kitty.conf"
+require_file 'SketchyBar config' "$config_root/sketchybar/sketchybarrc"
+require_file 'SketchyBar app icon font' "$config_root/sketchybar/vendor/app-font/sketchybar-app-font.ttf"
+require_file 'SketchyBar app icon map' "$config_root/sketchybar/vendor/app-font/icon_map.lua"
+require_file 'SketchyBar Lua entry point' "$config_root/sketchybar/init.lua"
+require_file 'SbarLua runtime' "$config_root/sketchybar/runtime/sketchybar.so"
 require_file 'tmux config' "$config_root/tmux/tmux.conf"
 require_file 'Zsh config' "$config_root/.zshrc"
 require_file 'Zsh secrets' "$config_root/zsh/secrets.zsh"
@@ -41,11 +45,24 @@ require_file 'Zed settings' "$config_root/zed/settings.json"
 require_file 'Neovim config' "$config_root/nvim/init.lua"
 require_file 'Yazi config' "$config_root/yazi/yazi.toml"
 
-for required_command in aerospace kitty tmux zsh starship zoxide fzf nvim yazi python3; do
+for required_command in aerospace sketchybar lua luac jq SwitchAudioSource tmux zsh starship zoxide fzf nvim yazi python3; do
   require_command "$required_command"
 done
 [[ -x /Applications/Ghostty.app/Contents/MacOS/ghostty ]] || die 'Ghostty app is not installed'
-[[ -x "$config_root/scripts/switch-theme" ]] || die 'Theme switcher is not executable'
+[[ -x "$config_root/sketchybar/sketchybarrc" ]] || die 'SketchyBar launcher is not executable'
+bash -n "$config_root/sketchybar/sketchybarrc"
+luac -p "$config_root"/sketchybar/*.lua "$config_root"/sketchybar/lib/*.lua \
+  "$config_root"/sketchybar/items/*.lua "$config_root"/sketchybar/items/widgets/*.lua \
+  "$config_root/sketchybar/vendor/app-font/icon_map.lua"
+lua - "$config_root/sketchybar" <<'LUA'
+local root = arg[1]
+package.path = root .. "/?.lua;" .. package.path
+-- Load the native API explicitly; ./sketchybar/init.lua can otherwise shadow it.
+package.preload.sketchybar = assert(package.loadlib(root .. "/runtime/sketchybar.so", "luaopen_sketchybar"))
+assert(type(require("sketchybar").event_loop) == "function", "SbarLua runtime failed to load")
+dofile(root .. "/tests/network.lua")
+LUA
+ok 'SketchyBar Lua syntax, runtime, and network parser validate'
 [[ "$HOME/.zshrc" -ef "$config_root/.zshrc" ]] || die "$HOME/.zshrc is not linked to the managed config"
 
 python3 - "$config_root/aerospace/aerospace.toml" <<'PY'
@@ -56,19 +73,18 @@ with open(sys.argv[1], "rb") as config_file:
     config = tomllib.load(config_file)
 
 bindings = config["mode"]["main"]["binding"]
-assert bindings["cmd-enter"] == 'exec-and-forget open -na "Ghostty"'
-assert bindings["cmd-shift-enter"] == 'exec-and-forget open -na "Kitty"'
+assert bindings["cmd-enter"] == 'exec-and-forget open -na "Zed"'
+assert bindings["cmd-shift-enter"] == 'exec-and-forget open -na "Firefox"'
 assert "tmux new-session -A -s Work" in bindings["cmd-alt-enter"]
 assert bindings["alt-h"] == "focus left"
+assert "sketchybar --trigger aerospace_workspace_change" in config["exec-on-workspace-change"][2]
+assert config["gaps"]["outer"]["top"] == 48
 PY
 ok 'AeroSpace TOML and launcher bindings validate'
 
 /Applications/Ghostty.app/Contents/MacOS/ghostty \
   +validate-config --config-file="$config_root/ghostty/config" >/dev/null 2>&1
 ok 'Ghostty config validates'
-
-kitty +runpy "from kitty.config import load_config; bad=[]; load_config('$config_root/kitty/kitty.conf', accumulate_bad_lines=bad); raise SystemExit(bool(bad))"
-ok 'Kitty config validates'
 
 tmux_socket="${TMPDIR:-/tmp}/omarchy-config-check-$$.sock"
 cleanup_tmux() {
@@ -87,8 +103,6 @@ ok 'tmux config loads in an isolated server'
 assert_contains 'Ghostty is decoration-free' '^window-decoration[[:space:]]*=[[:space:]]*(false|none)$' "$config_root/ghostty/config"
 assert_contains 'Ghostty emits Alt-Enter CSI-u' '^keybind[[:space:]]*=[[:space:]]*alt\+enter=' "$config_root/ghostty/config"
 assert_contains 'Ghostty emits Alt-Shift-Enter CSI-u' '^keybind[[:space:]]*=[[:space:]]*alt\+shift\+enter=' "$config_root/ghostty/config"
-assert_contains 'Kitty emits Alt-Enter CSI-u' '^map[[:space:]]+alt\+enter[[:space:]]+send_text all' "$config_root/kitty/kitty.conf"
-assert_contains 'Kitty emits Alt-Shift-Enter CSI-u' '^map[[:space:]]+alt\+shift\+enter[[:space:]]+send_text all' "$config_root/kitty/kitty.conf"
 assert_contains 'tmux uses Ctrl-Space prefix' '^set -g prefix C-Space$' "$config_root/tmux/tmux.conf"
 assert_contains 'tmux supports direct vertical splits' '^bind -n M-Enter split-window -v' "$config_root/tmux/tmux.conf"
 if grep -Eq '^set -g prefix2|^bind C-b' "$config_root/tmux/tmux.conf"; then
@@ -134,9 +148,5 @@ ok 'Zsh config is free of Powerlevel10k references'
 
 nvim --headless '+qa' >/dev/null 2>&1
 ok 'Neovim starts headless'
-
-"$config_root/scripts/switch-theme" list >/dev/null
-"$config_root/scripts/switch-theme" current >/dev/null
-ok 'Theme switcher interface responds'
 
 printf 'Validation complete.\n'

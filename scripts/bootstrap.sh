@@ -7,11 +7,15 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 
 echo "Installing core CLI tools..."
-brew install git neovim tmux yazi btop fzf ripgrep fd starship zoxide stow deno bun nvm go pnpm python
+brew install git neovim tmux yazi btop fzf ripgrep fd starship zoxide stow deno bun nvm go pnpm python jq switchaudio-osx lua
+brew tap FelixKratz/formulae
+brew trust --formula felixkratz/formulae/sketchybar
+brew install sketchybar
+"$HOME/.config/scripts/install-sketchybar-lua.sh"
 mkdir -p "$HOME/.nvm"
 
 echo "Installing UI apps..."
-brew install --cask aerospace ghostty kitty raycast font-maple-mono-nf
+brew install --cask aerospace ghostty raycast font-maple-mono-nf
 
 zinit_home="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 echo "Ensuring Zinit is installed..."

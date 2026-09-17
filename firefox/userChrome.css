@@ -1,6 +1,26 @@
-/* Use Fira Code throughout the Firefox interface. */
+/* Static Hubbamax chrome, matching Ghostty and Zed. */
+:root {
+  --toolbar-bgcolor: #1c1c1c !important;
+  --toolbar-color: #bcbcbc !important;
+  --toolbar-field-background-color: #262626 !important;
+  --toolbar-field-color: #bcbcbc !important;
+  --toolbar-field-focus-background-color: #303030 !important;
+  --toolbar-field-focus-color: #bcbcbc !important;
+  --toolbar-field-focus-border-color: #87afaf !important;
+  --lwt-accent-color: #1c1c1c !important;
+  --lwt-text-color: #bcbcbc !important;
+  --lwt-tab-text: #bcbcbc !important;
+  --lwt-selected-tab-background-color: #303030 !important;
+  --tab-selected-bgcolor: #303030 !important;
+  --tab-selected-textcolor: #87afaf !important;
+}
+
 :root,
 * {
-  font-family: "Fira Code", monospace !important;
+  font-family: "Comic Code Ligatures", monospace !important;
   font-variant-ligatures: contextual;
+}
+
+.tab-background[selected] {
+  box-shadow: inset 0 -2px #87afaf !important;
 }

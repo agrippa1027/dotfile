@@ -47,6 +47,7 @@ zinit snippet OMZP::aws
 zinit snippet OMZP::kubectl
 
 bindkey -v
+KEYTIMEOUT=10
 bindkey '^p' history-search-backward
 bindkey '^n' history-search-forward
 bindkey '^[w' kill-region
