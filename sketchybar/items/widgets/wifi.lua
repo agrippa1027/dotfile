@@ -1,3 +1,4 @@
+local sbar = require("sketchybar")
 -- Popup layout adapted from FelixKratz/dotfiles (GPL-3.0); see vendor/README.md.
 local colors = require("colors")
 local icons = require("icons")
@@ -30,7 +31,7 @@ for _, entry in ipairs({
   rows[entry[1]] = sbar.add("item", "widgets.wifi." .. entry[1], {
     position = "popup." .. wifi.name,
     width = popup_width,
-    icon = { string = entry[2], font = { family = settings.font.text }, width = 100, align = "left" },
+    icon = { string = entry[2], font = { family = settings.font.icon }, width = 100, align = "left" },
     label = { string = "Checking…", max_chars = 24, width = popup_width - 100, align = "right" },
   })
 end

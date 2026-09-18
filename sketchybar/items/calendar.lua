@@ -1,3 +1,4 @@
+local sbar = require("sketchybar")
 local settings = require("settings")
 -- Adapted from FelixKratz/dotfiles; see vendor/README.md (GPL-3.0).
 local colors = require("colors")
@@ -10,7 +11,7 @@ local cal = sbar.add("item", "calendar", {
     color = colors.black,
     padding_left = 8,
     font = {
-      family = settings.font.numbers,
+      family = settings.font.text,
       style = settings.font.style_map["Black"],
       size = 12.0,
     },
@@ -20,7 +21,7 @@ local cal = sbar.add("item", "calendar", {
     padding_right = 8,
     width = 49,
     align = "right",
-    font = { family = settings.font.numbers },
+    font = { family = settings.font.text },
   },
   position = "right",
   update_freq = 30,

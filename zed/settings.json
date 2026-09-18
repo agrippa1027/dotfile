@@ -118,6 +118,15 @@
   //  LANGUAGES
   // ============================================================
   "languages": {
+    "Lua": {
+      "formatter": {
+        "external": {
+          "command": "/opt/homebrew/bin/stylua",
+          "arguments": ["--search-parent-directories", "--stdin-filepath", "{buffer_path}", "-"],
+        },
+      },
+      "format_on_save": "on",
+    },
     "HTML": {
       "show_edit_predictions": true,
     },

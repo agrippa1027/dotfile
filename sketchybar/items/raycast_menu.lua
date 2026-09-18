@@ -1,3 +1,4 @@
+local sbar = require("sketchybar")
 local colors = require("colors")
 local settings = require("settings")
 
@@ -8,7 +9,7 @@ local menu = sbar.add("item", "raycast.menu", {
     string = "Menu",
     color = colors.white,
     font = {
-      family = settings.font.numbers,
+      family = settings.font.text,
       style = settings.font.style_map.Bold,
       size = 13,
     },

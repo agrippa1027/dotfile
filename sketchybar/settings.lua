@@ -1,10 +1,10 @@
 return {
-  paddings = 10,
+  paddings = 5,
   group_paddings = 5,
   icons = "NedFont",
   font = {
-    text = "Hack Nerd Font",
-    numbers = "Comic Code Ligatures",
+    icon = "Hack Nerd Font",
+    text = "Comic Code Ligatures",
     style_map = {
       Regular = "Regular",
       Semibold = "Regular",

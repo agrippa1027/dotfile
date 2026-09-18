@@ -1,3 +1,4 @@
+local sbar = require("sketchybar")
 local colors = require("colors")
 -- Adapted from FelixKratz/dotfiles; see vendor/README.md (GPL-3.0).
 local utils = require("lib.utils")
@@ -12,7 +13,7 @@ local volume_percent = sbar.add("item", "widgets.volume1", {
   label = {
     string = "??%",
     padding_left = -1,
-    font = { family = settings.font.numbers }
+    font = { family = settings.font.text }
   },
 })
 
@@ -33,7 +34,7 @@ local volume_icon = sbar.add("item", "widgets.volume2", {
     width = 25,
     align = "left",
     font = {
-      family = settings.font.text,
+      family = settings.font.icon,
       style = settings.font.style_map["Regular"],
       size = 14.0,
     },
@@ -64,7 +65,7 @@ local volume_slider = sbar.add("slider", popup_width, {
     },
     knob= {
       string = "●",
-      font = { family = settings.font.numbers, size = 10 },
+      font = { family = settings.font.text, size = 10 },
       drawing = true,
     },
   },

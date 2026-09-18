@@ -1,3 +1,4 @@
+local sbar = require("sketchybar")
 local colors = require("colors")
 local utils = require("lib.utils")
 local app_icons = require("vendor.app-font.icon_map")

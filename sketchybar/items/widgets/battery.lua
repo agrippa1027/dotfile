@@ -1,3 +1,4 @@
+local sbar = require("sketchybar")
 local icons = require("icons")
 -- Adapted from FelixKratz/dotfiles; see vendor/README.md (GPL-3.0).
 local colors = require("colors")
@@ -11,7 +12,7 @@ local battery = sbar.add("item", "widgets.battery", {
       size = 19.0,
     }
   },
-  label = { font = { family = settings.font.numbers } },
+  label = { font = { family = settings.font.text } },
   update_freq = 180,
   popup = { align = "center" }
 })

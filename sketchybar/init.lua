@@ -1,7 +1,7 @@
 local root = assert(os.getenv("CONFIG_DIR"), "SketchyBar CONFIG_DIR is missing")
 package.path = root .. "/?.lua;" .. root .. "/?/init.lua;" .. package.path
 package.cpath = root .. "/runtime/?.so;" .. package.cpath
-sbar = require("sketchybar")
+local sbar = require("sketchybar")
 
 sbar.begin_config()
 require("bar")

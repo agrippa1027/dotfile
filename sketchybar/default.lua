@@ -1,3 +1,4 @@
+local sbar = require("sketchybar")
 local settings = require("settings")
 local colors = require("colors")
 -- Adapted from FelixKratz/dotfiles; see vendor/README.md (GPL-3.0).
@@ -5,9 +6,10 @@ local colors = require("colors")
 -- Equivalent to the --default domain
 sbar.default({
   updates = "when_shown",
+
   icon = {
     font = {
-      family = settings.font.text,
+      family = settings.font.icon,
       style = settings.font.style_map["Bold"],
       size = 14.0
     },
@@ -16,9 +18,10 @@ sbar.default({
     padding_right = settings.paddings,
     background = { image = { corner_radius = 9 } },
   },
+
   label = {
     font = {
-      family = settings.font.numbers,
+      family = settings.font.text,
       style = settings.font.style_map["Semibold"],
       size = 13.0
     },
@@ -26,6 +29,7 @@ sbar.default({
     padding_left = settings.paddings,
     padding_right = settings.paddings,
   },
+
   background = {
     drawing = true,
     height = 26,
