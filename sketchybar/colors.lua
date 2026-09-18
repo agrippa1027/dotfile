@@ -11,6 +11,6 @@ return {
   bg1 = 0xff262626,
   bg2 = 0xff303030,
   transparent = 0x00000000,
-  bar = { bg = 0xff1c1c1c },
+  bar = { bg = 0xff1c1c1c, glass = 0x991c1c1c, glass_border = 0x88303030 },
   popup = { bg = 0xff1c1c1c, border = 0xff303030 },
 }

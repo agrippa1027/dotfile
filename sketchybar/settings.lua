@@ -1,7 +1,7 @@
 return {
-  paddings = 5,
+  paddings = 10,
   group_paddings = 5,
-  icons = "NerdFont",
+  icons = "NedFont",
   font = {
     text = "Hack Nerd Font",
     numbers = "Comic Code Ligatures",
