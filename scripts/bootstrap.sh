@@ -7,7 +7,7 @@ if ! command -v brew >/dev/null 2>&1; then
 fi
 
 echo "Installing core CLI tools..."
-brew install git neovim tmux yazi btop fzf ripgrep fd starship zoxide stow deno bun nvm go pnpm python jq switchaudio-osx lua
+brew install git neovim tmux yazi btop fzf ripgrep fd starship zoxide stow deno bun nvm go pnpm python jq lua
 brew tap FelixKratz/formulae
 brew trust --formula felixkratz/formulae/sketchybar
 brew install sketchybar

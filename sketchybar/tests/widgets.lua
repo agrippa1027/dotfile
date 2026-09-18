@@ -89,13 +89,6 @@ function api.exec(command, callback)
 		pending[#pending + 1] = { command = command, callback = callback }
 	end
 end
-function api.remove(pattern)
-	for name in pairs(items) do
-		if type(name) == "string" and name:match("^volume%.device%.") then
-			items[name] = nil
-		end
-	end
-end
 function api.delay(_, callback)
 	timers[#timers + 1] = callback
 end
@@ -106,11 +99,11 @@ local function flush()
 		callback()
 	end
 end
-local function reply(command, value)
+local function reply(command, value, exit_code)
 	for i, request in ipairs(pending) do
 		if request.command == command then
 			table.remove(pending, i)
-			request.callback(value, 0)
+			request.callback(value, exit_code or 0)
 			return
 		end
 	end
@@ -187,21 +180,93 @@ equal(
 
 emit("widgets.volume1", "volume_change", { INFO = "9" })
 equal(items["widgets.volume1"].properties.label, "09%", "Volume percentage")
-emit("widgets.volume2", "mouse.clicked")
-reply("SwitchAudioSource -t output -c", "Built-in")
-reply("SwitchAudioSource -a -t output", "Built-in\nHeadphones\n")
-equal(items["volume.device.0"].properties.label.string, "Built-in", "Output device row")
-equal(items["volume.device.1"].properties.label.string, "Headphones", "Second output row")
-emit("popup.events", "mouse.exited.global")
-flush()
-equal(items["widgets.volume.bracket"].properties.popup.drawing, false, "Volume global exit closes")
-equal(items["volume.device.0"], nil, "Closing volume removes output rows")
-emit("widgets.volume2", "mouse.clicked", { BUTTON = "right" })
+local volume_icons = require("icons").volume
+for _, case in ipairs({
+	{ 0, volume_icons._0 },
+	{ 1, volume_icons._10 },
+	{ 10, volume_icons._10 },
+	{ 11, volume_icons._33 },
+	{ 30, volume_icons._33 },
+	{ 31, volume_icons._66 },
+	{ 60, volume_icons._66 },
+	{ 61, volume_icons._100 },
+	{ 100, volume_icons._100 },
+}) do
+	emit("widgets.volume1", "volume_change", { INFO = tostring(case[1]) })
+	equal(items["widgets.volume2"].properties.label, case[2], "Volume icon at " .. case[1])
+	equal(items["widgets.volume1"].properties.label, string.format("%02d%%", case[1]), "Volume label at " .. case[1])
+end
+emit("widgets.volume1", "volume_change", { INFO = "invalid" })
+equal(items["widgets.volume1"].properties.label, "100%", "Invalid volume leaves label unchanged")
+emit("widgets.volume1", "forced")
+reply("osascript -e 'output volume of (get volume settings)'", " 9\n")
+equal(items["widgets.volume1"].properties.label, "09%", "Forced refresh trims volume")
+for _, value in ipairs({ -1, 101, math.huge, -math.huge, 0 / 0 }) do
+	emit("widgets.volume1", "volume_change", { INFO = value })
+	equal(items["widgets.volume1"].properties.label, "09%", "Invalid numeric volume is ignored")
+end
+emit("widgets.volume1", "volume_change", { INFO = "9.5" })
+equal(items["widgets.volume1"].properties.label, "10%", "Fractional volume rounds to a whole percent")
+emit("widgets.volume1", "forced")
+emit("widgets.volume1", "volume_change", { INFO = "42" })
+reply("osascript -e 'output volume of (get volume settings)'", "9\n")
+equal(items["widgets.volume1"].properties.label, "42%", "Delayed refresh cannot overwrite a volume event")
+emit("widgets.volume1", "forced")
+emit("widgets.volume1", "forced")
+reply("osascript -e 'output volume of (get volume settings)'", "9\n")
+equal(items["widgets.volume1"].properties.label, "42%", "Older refresh cannot overwrite newer refresh")
+reply("osascript -e 'output volume of (get volume settings)'", "43\n")
+equal(items["widgets.volume1"].properties.label, "43%", "Latest refresh updates volume")
+emit("widgets.volume1", "forced")
+reply("osascript -e 'output volume of (get volume settings)'", "9\n", 1)
+equal(items["widgets.volume1"].properties.label, "43%", "Failed refresh leaves volume unchanged")
+emit("widgets.volume1", "system_woke")
+reply("osascript -e 'output volume of (get volume settings)'", "44\n")
+equal(items["widgets.volume1"].properties.label, "44%", "Waking refreshes volume")
+emit("widgets.volume2", "mouse.scrolled", { INFO = { delta = 1, modifier = "" } })
 equal(
 	commands[#commands],
-	"open 'x-apple.systempreferences:com.apple.Sound-Settings.extension'",
-	"Sound settings action"
+	'osascript -e "set volume output volume (output volume of (get volume settings) + 10.0)"',
+	"Scroll uses ten percent steps"
 )
+emit("widgets.volume1", "mouse.scrolled", { INFO = { delta = -1, modifier = "ctrl" } })
+equal(
+	commands[#commands],
+	'osascript -e "set volume output volume (output volume of (get volume settings) + -1)"',
+	"Control scroll uses one percent steps"
+)
+for _, info in ipairs({
+	false,
+	"invalid",
+	{},
+	{ delta = "invalid" },
+	{ delta = "1; exit" },
+	{ delta = 0 },
+	{ delta = math.huge },
+	{ delta = -math.huge },
+	{ delta = 1e308 },
+	{ delta = 0 / 0 },
+}) do
+	local before = #commands
+	emit("widgets.volume2", "mouse.scrolled", { INFO = info })
+	equal(#commands, before, "Invalid or zero scroll does not execute commands")
+end
+emit("widgets.volume1", "mouse.scrolled", { INFO = { delta = "-1", modifier = "ctrl" } })
+equal(
+	commands[#commands],
+	'osascript -e "set volume output volume (output volume of (get volume settings) + -1)"',
+	"Numeric scroll strings use fine steps"
+)
+-- Volume is a bar control without popup children or discovery commands.
+equal(#items["widgets.volume.bracket"]:query().popup.items, 0, "Volume has no popup children")
+for _, name in ipairs({ "widgets.volume1", "widgets.volume2" }) do
+	local before = #commands
+	emit(name, "mouse.clicked")
+	equal(#commands, before, "Volume left click does not execute commands")
+	equal(items["widgets.volume.bracket"].properties.popup.drawing, false, "Volume click does not open popup")
+	emit(name, "mouse.clicked", { BUTTON = "right" })
+	equal(commands[#commands], require("settings").commands.sound, "Volume right click opens Sound settings")
+end
 
 if arg[2] == "--popup-regressions" then
 	equal(items["popup.events"].properties.updates, true, "Global exit receiver always updates")
@@ -247,53 +312,6 @@ if arg[2] == "--popup-regressions" then
 	emit("widgets.battery", "mouse.clicked")
 	equal(items["apple.logo"].properties.popup.drawing, false, "Opening another popup closes the previous one")
 	emit("popup.events", "mouse.exited.global")
-
-	-- A bracket owns volume, and its slider/output rows share the lifecycle.
-	emit("widgets.volume2", "mouse.clicked")
-	emit("widgets.volume2", "mouse.entered")
-	emit("widgets.volume2", "mouse.exited")
-	emit("widgets.volume1", "mouse.entered")
-	flush()
-	equal(items["widgets.volume.bracket"].properties.popup.drawing, true, "Moving between volume triggers stays open")
-	reply("SwitchAudioSource -t output -c", "Built-in")
-	reply("SwitchAudioSource -a -t output", "Built-in\nHeadphones\n")
-	emit("widgets.volume1", "mouse.exited")
-	emit(child("widgets.volume.bracket"), "mouse.entered")
-	flush()
-	equal(items["widgets.volume.bracket"].properties.popup.drawing, true, "Volume slider stays usable")
-	exit(child("widgets.volume.bracket"))
-	emit("volume.device.0", "mouse.entered")
-	flush()
-	equal(items["widgets.volume.bracket"].properties.popup.drawing, true, "Slider to output row stays open")
-	exit("volume.device.0")
-	flush()
-	equal(items["widgets.volume.bracket"].properties.popup.drawing, false, "Leaving output row closes volume popup")
-	equal(items["volume.device.0"], nil, "Row exit removes output rows")
-
-	-- Reopening must install handlers on recreated dynamic output rows.
-	emit("widgets.volume2", "mouse.clicked")
-	reply("SwitchAudioSource -t output -c", "Built-in")
-	reply("SwitchAudioSource -a -t output", "Built-in\n")
-	emit("volume.device.0", "mouse.entered")
-	exit("volume.device.0")
-	flush()
-	equal(
-		items["widgets.volume.bracket"].properties.popup.drawing,
-		false,
-		"Recreated output row still closes popup at host boundary"
-	)
-
-	-- Slow shell results from a closed or replaced popup cannot recreate rows.
-	emit("widgets.volume2", "mouse.clicked")
-	reply("SwitchAudioSource -t output -c", "Built-in")
-	emit("popup.events", "mouse.exited.global")
-	emit("widgets.volume2", "mouse.clicked")
-	reply("SwitchAudioSource -a -t output", "Stale output\n")
-	equal(items["volume.device.0"], nil, "Old session result cannot populate reopened popup")
-	reply("SwitchAudioSource -t output -c", "Built-in")
-	emit("popup.events", "mouse.exited.global")
-	reply("SwitchAudioSource -a -t output", "Built-in\n")
-	equal(items["volume.device.0"], nil, "Closed popup ignores delayed output results")
 
 	emit("apple.logo", "mouse.clicked")
 	hold_pointer = true

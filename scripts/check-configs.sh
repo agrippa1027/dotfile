@@ -45,7 +45,7 @@ require_file 'Zed settings' "$config_root/zed/settings.json"
 require_file 'Neovim config' "$config_root/nvim/init.lua"
 require_file 'Yazi config' "$config_root/yazi/yazi.toml"
 
-for required_command in aerospace sketchybar lua luac jq SwitchAudioSource tmux zsh starship zoxide fzf nvim yazi python3; do
+for required_command in aerospace sketchybar lua luac jq tmux zsh starship zoxide fzf nvim yazi python3; do
   require_command "$required_command"
 done
 [[ -x /Applications/Ghostty.app/Contents/MacOS/ghostty ]] || die 'Ghostty app is not installed'

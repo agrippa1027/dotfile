@@ -26,7 +26,6 @@ return {
 		apple_height = 32,
 		wifi_height = 30,
 		wifi_width = 280,
-		volume_width = 250,
 	},
 	commands = {
 		settings = "open -a 'System Settings'",

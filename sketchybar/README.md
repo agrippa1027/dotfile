@@ -7,12 +7,12 @@ Controls:
 - Workspace numbers/app glyphs switch AeroSpace workspaces. Workspaces 1–3 remain available; other empty workspaces are hidden.
 - Apple icon opens the settings popup, including Bluetooth settings.
 - Wi-Fi opens connection, network name, IP, router, and interface details plus Wi-Fi settings.
-- Speaker or volume percentage opens the volume slider and audio-output picker. Scroll adjusts volume; right-click opens Sound settings.
+- Scroll over the speaker or volume percentage to adjust volume. Hold Control for one-percent steps; right-click opens Sound settings.
 - Battery opens its remaining-time estimate. Right-click opens Battery settings.
 - Date/time opens Calendar.
 - Left-click `Menu` to open Raycast's searchable menu commands for the focused application. Raycast can omit some commands; right-click `Menu` or press **Alt-M** to reveal the complete native menu bar. In Zed, **Cmd-Shift-X** opens Extensions directly.
 
-Only one popup opens at a time. Moving into a popup or between its rows keeps it open; leaving closes it after a short delay. `lib/popup.lua` handles this behavior for Apple, battery, Wi-Fi, and volume, including volume's bracket and dynamically created output rows.
+Only one popup opens at a time. Moving into a popup or between its rows keeps it open; leaving closes it after a short delay. `lib/popup.lua` handles this behavior for Apple, battery, and Wi-Fi.
 
 Edit `settings.lua` for bar height, side margins and inner padding (`bar`), popup sizes and exit delay (`popup`), settings commands (`commands`), fonts, and item spacing. Shared item styling stays in `default.lua`; widget files contain their data and specific layout.
 
