@@ -8,9 +8,20 @@ for _, id in ipairs({ "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "a" }) d
   local workspace = id
   local item = sbar.add("item", "workspace." .. workspace, {
     position = "left",
-    icon = { string = workspace, font = { family = "Comic Code Ligatures", style = "Regular", size = 13 } },
-    label = { font = { family = "sketchybar-app-font", style = "Regular", size = 15 } },
-    background = { color = colors.bg1 },
+    icon = {
+      string = workspace,
+      font = { family = "Comic Code Ligatures", style = "Regular", size = 13 },
+      padding_left = 6,
+      padding_right = 5,
+    },
+    label = {
+      font = { family = "sketchybar-app-font", style = "Regular", size = 15 },
+      padding_left = 3,
+      padding_right = 6,
+    },
+    background = { color = colors.bg1, corner_radius = 7 },
+    padding_left = 2,
+    padding_right = 2,
   })
   item:subscribe("mouse.clicked", function()
     sbar.exec("/opt/homebrew/bin/aerospace workspace " .. utils.quote(workspace))

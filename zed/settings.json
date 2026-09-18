@@ -53,6 +53,10 @@
     "show": "never",
   },
 
+  "cursor_animation": {
+    "enabled": true,
+  },
+
   // ============================================================
   //  PANELS / DOCKS
   // ============================================================
@@ -70,10 +74,34 @@
     "dock": "left",
   },
   "agent": {
+    "tool_permissions": {
+      "tools": {
+        "fetch": {
+          "default": "allow",
+        },
+        "delete_path": {
+          "always_allow": [
+            {
+              "pattern": "^\\.config/",
+            },
+          ],
+        },
+        "terminal": {
+          "default": "allow",
+          "always_allow": [
+            {
+              "pattern": "^sleep\\s+2(\\s|$)",
+            },
+            {
+              "pattern": "^screencapture\\b",
+            },
+          ],
+        },
+      },
+    },
     "sandbox_permissions": {
-      "network_hosts": [
-        "zed.dev"
-      ]
+      "allow_unsandboxed": true,
+      "network_hosts": ["zed.dev"],
     },
     "default_model": {
       "provider": "openai-subscribed",
