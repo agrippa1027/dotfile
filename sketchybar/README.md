@@ -12,7 +12,11 @@ Controls:
 - Date/time opens Calendar.
 - Left-click `Menu` to open Raycast's searchable menu commands for the focused application. Raycast can omit some commands; right-click `Menu` or press **Alt-M** to reveal the complete native menu bar. In Zed, **Cmd-Shift-X** opens Extensions directly.
 
-Wi-Fi refreshes every 30 seconds and on wake/click. Current macOS no longer provides reliable `wifi_change` events and redacts SSID without Location authorization. A redacted name is shown as “Hidden by macOS”; it does not falsely imply disconnection. “Connected” describes Wi-Fi link/address status, not a test of Internet reachability.
+Only one popup opens at a time. Moving into a popup or between its rows keeps it open; leaving closes it after a short delay. `lib/popup.lua` handles this behavior for Apple, battery, Wi-Fi, and volume, including volume's bracket and dynamically created output rows.
+
+Edit `settings.lua` for bar height, side margins and inner padding (`bar`), popup sizes and exit delay (`popup`), settings commands (`commands`), fonts, and item spacing. Shared item styling stays in `default.lua`; widget files contain their data and specific layout.
+
+Wi-Fi refreshes every 30 seconds and on wake/open. Current macOS no longer provides reliable `wifi_change` events and redacts SSID without Location authorization. A redacted name is shown as “Hidden by macOS”; it does not falsely imply disconnection. “Connected” describes Wi-Fi link/address status, not a test of Internet reachability.
 
 Install SbarLua after installing SketchyBar and Homebrew Lua 5.5:
 

@@ -62,7 +62,8 @@ package.preload.sketchybar = assert(package.loadlib(root .. "/runtime/sketchybar
 assert(type(require("sketchybar").event_loop) == "function", "SbarLua runtime failed to load")
 dofile(root .. "/tests/network.lua")
 LUA
-ok 'SketchyBar Lua syntax, runtime, and network parser validate'
+lua "$config_root/sketchybar/tests/widgets.lua" "$config_root/sketchybar" --popup-regressions
+ok 'SketchyBar Lua syntax, runtime, network parser, and popup behavior validate'
 [[ "$HOME/.zshrc" -ef "$config_root/.zshrc" ]] || die "$HOME/.zshrc is not linked to the managed config"
 
 python3 - "$config_root/aerospace/aerospace.toml" <<'PY'

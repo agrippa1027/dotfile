@@ -5,9 +5,9 @@ local settings = require("settings")
 sbar.bar({
 	-- Geometry
 	position = "top",
-	height = 38,
-	margin = 8,
-	y_offset = 5,
+	height = settings.bar.height,
+	margin = settings.bar.margin,
+	y_offset = settings.bar.y_offset,
 
 	-- Appearance
 	color = colors.bar.glass,
@@ -18,8 +18,8 @@ sbar.bar({
 	shadow = false,
 
 	-- Content spacing
-	padding_left = 8,
-	padding_right = 8,
+	padding_left = settings.bar.padding_left,
+	padding_right = settings.bar.padding_right,
 
 	-- Visibility and placement
 	hidden = false,

@@ -1,6 +1,8 @@
 local sbar = require("sketchybar")
 local colors = require("colors")
 local icons = require("icons")
+local settings = require("settings")
+local popup = require("lib.popup")
 
 local apple = sbar.add("item", "apple.logo", {
 	position = "left",
@@ -13,22 +15,20 @@ local apple = sbar.add("item", "apple.logo", {
 
 	label = { drawing = false },
 	background = { color = colors.transparent },
-	popup = { height = 32 },
+	popup = { height = settings.popup.apple_height },
 })
 
-local function close()
-	apple:set({ popup = { drawing = false } })
-end
+local menu = popup.bind(apple)
 
 -- Entries for the apple menu popup.
 local entries = {
-	{ "settings", icons.gear, "System Settings", "open -a 'System Settings'" },
-	{ "activity", icons.cpu, "Activity Monitor", "open -a 'Activity Monitor'" },
+	{ "settings", icons.gear, "System Settings", settings.commands.settings },
+	{ "activity", icons.cpu, "Activity Monitor", settings.commands.activity },
 	{
 		"bluetooth",
 		"",
 		"Bluetooth settings",
-		"open 'x-apple.systempreferences:com.apple.BluetoothSettings'",
+		settings.commands.bluetooth,
 	},
 }
 
@@ -38,17 +38,12 @@ for _, entry in ipairs(entries) do
 		icon = entry[2],
 		label = entry[3],
 	})
+	menu:watch(item)
 	item:subscribe("mouse.clicked", function()
 		sbar.exec(entry[4])
-		close()
+		menu:close()
 	end)
 end
-
--- Toggle the apple menu popup on mouse click and close on mouse exit.
-apple:subscribe("mouse.clicked", function()
-	apple:set({ popup = { drawing = "toggle" } })
-end)
-apple:subscribe({ "mouse.exited", "mouse.exited.global" }, close)
 
 -- Hidden event receiver keeps Alt-M usable while native menus are showing.
 sbar.add("event", "native_menus_toggle")
