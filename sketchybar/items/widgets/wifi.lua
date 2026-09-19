@@ -13,10 +13,10 @@ local wifi = sbar.add("item", "widgets.wifi", {
 	icon = { string = icons.wifi.disconnected, color = colors.grey },
 	label = { drawing = false },
 	background = { color = colors.transparent },
-	popup = { align = "center", height = settings.popup.wifi_height },
+	popup = { align = "center", height = settings.popup.height },
 })
 
-local popup_width = settings.popup.wifi_width
+local popup_width = settings.popup.width
 local heading = sbar.add("item", "widgets.wifi.heading", {
 	position = "popup." .. wifi.name,
 	width = popup_width,

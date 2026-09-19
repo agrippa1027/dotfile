@@ -22,8 +22,8 @@ return {
 	},
 	popup = {
 		apple_height = 32,
-		wifi_height = 30,
-		wifi_width = 280,
+		height = 30,
+		width = 280,
 	},
 	commands = {
 		settings = "open -a 'System Settings'",
