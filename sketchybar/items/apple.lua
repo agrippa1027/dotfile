@@ -26,7 +26,7 @@ local entries = {
 	{ "activity", icons.cpu, "Activity Monitor", settings.commands.activity },
 	{
 		"bluetooth",
-		"",
+		icons.bluetooth,
 		"Bluetooth settings",
 		settings.commands.bluetooth,
 	},

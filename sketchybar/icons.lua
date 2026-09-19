@@ -8,6 +8,7 @@ local icons = {
 		gear = "􀍟",
 		cpu = "􀫥",
 		clipboard = "􀉄",
+		bluetooth = "",
 
 		switch = {
 			on = "􁏮",
@@ -50,6 +51,7 @@ local icons = {
 		gear = "",
 		cpu = "",
 		clipboard = "",
+		bluetooth = "",
 
 		switch = {
 			on = "󱨥",

@@ -136,6 +136,7 @@ require("items.apple")
 require("items.widgets.battery")
 require("items.widgets.wifi")
 require("items.widgets.volume")
+require("items.widgets.bluetooth")
 equal(items["widgets.volume2"].properties.label.font.family, require("settings").font.icon, "Volume glyph font")
 
 -- Lock action commands and widget data before consolidating popup behavior.
@@ -177,6 +178,31 @@ equal(
 	"/usr/bin/open 'x-apple.systempreferences:com.apple.wifi-settings-extension'",
 	"Wi-Fi settings action"
 )
+
+local bluetooth_command = "/usr/sbin/system_profiler SPBluetoothDataType -json -detailLevel mini 2>/dev/null"
+reply(bluetooth_command, {
+	SPBluetoothDataType = {
+		{
+			controller_properties = { controller_state = "attrib_on" },
+			device_connected = { { Keyboard = {} }, { Mouse = {} } },
+		},
+	},
+})
+equal(items["widgets.bluetooth"].properties.icon.color, require("colors").white, "Bluetooth radio on color")
+equal(items["widgets.bluetooth"].properties.label.string, "2", "Bluetooth connected-device count")
+equal(items["widgets.bluetooth"].properties.label.drawing, true, "Bluetooth count is visible")
+emit("widgets.bluetooth", "routine")
+reply(bluetooth_command, {
+	SPBluetoothDataType = { { controller_properties = { controller_state = "attrib_off" } } },
+})
+equal(items["widgets.bluetooth"].properties.icon.color, require("colors").grey, "Bluetooth radio off color")
+equal(items["widgets.bluetooth"].properties.label.drawing, false, "Bluetooth count hides when disconnected")
+emit("widgets.bluetooth", "system_woke")
+reply(bluetooth_command, nil, 1)
+equal(items["widgets.bluetooth"].properties.icon.color, require("colors").grey, "Unavailable Bluetooth color")
+equal(items["widgets.bluetooth"].properties.label.drawing, false, "Unavailable Bluetooth hides count")
+emit("widgets.bluetooth", "mouse.clicked")
+equal(commands[#commands], require("settings").commands.bluetooth, "Bluetooth settings action")
 
 emit("widgets.volume1", "volume_change", { INFO = "9" })
 equal(items["widgets.volume1"].properties.label, "09%", "Volume percentage")

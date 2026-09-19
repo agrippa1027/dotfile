@@ -23,7 +23,7 @@ local cal = sbar.add("item", "calendar", {
 		font = { family = settings.font.text },
 	},
 
-	position = "right",
+	position = "center",
 	update_freq = 30,
 	padding_left = 1,
 	padding_right = 1,
