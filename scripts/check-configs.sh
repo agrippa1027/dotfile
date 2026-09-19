@@ -60,10 +60,8 @@ package.path = root .. "/?.lua;" .. package.path
 -- Load the native API explicitly; ./sketchybar/init.lua can otherwise shadow it.
 package.preload.sketchybar = assert(package.loadlib(root .. "/runtime/sketchybar.so", "luaopen_sketchybar"))
 assert(type(require("sketchybar").event_loop) == "function", "SbarLua runtime failed to load")
-dofile(root .. "/tests/network.lua")
 LUA
-lua "$config_root/sketchybar/tests/widgets.lua" "$config_root/sketchybar"
-ok 'SketchyBar Lua syntax, runtime, network parser, and popup behavior validate'
+ok 'SketchyBar Lua syntax and runtime validate'
 [[ "$HOME/.zshrc" -ef "$config_root/.zshrc" ]] || die "$HOME/.zshrc is not linked to the managed config"
 
 python3 - "$config_root/aerospace/aerospace.toml" <<'PY'

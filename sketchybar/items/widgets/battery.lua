@@ -13,6 +13,7 @@ local battery = sbar.add("item", "widgets.battery", {
 		},
 	},
 	update_freq = 180,
+	background = { color = colors.bg1 },
 	popup = { align = "center" },
 })
 
@@ -86,13 +87,4 @@ popup.bind(battery, {
 			remaining_time:set({ label = label })
 		end)
 	end,
-})
-
-sbar.add("bracket", "widgets.battery.bracket", { battery.name }, {
-	background = { color = colors.bg1 },
-})
-
-sbar.add("item", "widgets.battery.padding", {
-	position = "right",
-	width = settings.group_paddings,
 })

@@ -44,7 +44,6 @@ bluetooth:subscribe("mouse.clicked", function()
 	sbar.exec(settings.commands.bluetooth)
 end)
 
-sbar.add("item", "widgets.bluetooth.spacing", { position = "right", width = settings.group_paddings })
 refresh()
 
 return bluetooth

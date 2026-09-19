@@ -123,6 +123,5 @@ open_settings:subscribe("mouse.clicked", function()
 	sbar.exec(settings.commands.wifi)
 end)
 
-sbar.add("item", "widgets.wifi.spacing", { position = "right", width = settings.group_paddings })
 refresh()
 return wifi
