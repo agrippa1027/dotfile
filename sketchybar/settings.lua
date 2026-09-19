@@ -1,7 +1,6 @@
 return {
 	paddings = 5,
 	group_paddings = 5,
-	icons = "NedFont",
 	font = {
 		icon = "Hack Nerd Font",
 		text = "Comic Code Ligatures",
@@ -22,7 +21,6 @@ return {
 		padding_right = 8,
 	},
 	popup = {
-		close_delay = 0.15,
 		apple_height = 32,
 		wifi_height = 30,
 		wifi_width = 280,

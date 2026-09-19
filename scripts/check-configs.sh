@@ -62,7 +62,7 @@ package.preload.sketchybar = assert(package.loadlib(root .. "/runtime/sketchybar
 assert(type(require("sketchybar").event_loop) == "function", "SbarLua runtime failed to load")
 dofile(root .. "/tests/network.lua")
 LUA
-lua "$config_root/sketchybar/tests/widgets.lua" "$config_root/sketchybar" --popup-regressions
+lua "$config_root/sketchybar/tests/widgets.lua" "$config_root/sketchybar"
 ok 'SketchyBar Lua syntax, runtime, network parser, and popup behavior validate'
 [[ "$HOME/.zshrc" -ef "$config_root/.zshrc" ]] || die "$HOME/.zshrc is not linked to the managed config"
 
@@ -78,6 +78,10 @@ assert bindings["cmd-enter"] == 'exec-and-forget open -na "Zed"'
 assert bindings["cmd-shift-enter"] == 'exec-and-forget open -na "Firefox"'
 assert "tmux new-session -A -s Work" in bindings["cmd-alt-enter"]
 assert bindings["alt-h"] == "focus left"
+assert bindings["alt-shift-tab"] == [
+    "move-workspace-to-monitor --wrap-around next",
+    "exec-and-forget sketchybar --trigger aerospace_workspace_change",
+]
 assert "sketchybar --trigger aerospace_workspace_change" in config["exec-on-workspace-change"][2]
 assert config["gaps"]["outer"]["top"] == 48
 PY

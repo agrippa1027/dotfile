@@ -5,6 +5,7 @@ local icons = require("icons")
 local settings = require("settings")
 local network = require("lib.network")
 local popup = require("lib.popup")
+local utils = require("lib.utils")
 
 local wifi = sbar.add("item", "widgets.wifi", {
 	position = "right",
@@ -87,7 +88,7 @@ local function refresh()
 		end
 		local data = { interface = interface }
 		local remaining = 4
-		local device = network.quote(interface)
+		local device = utils.quote(interface)
 		local commands = {
 			power = "/usr/sbin/networksetup -getairportpower " .. device,
 			summary = "/usr/sbin/ipconfig getsummary " .. device,
@@ -96,7 +97,7 @@ local function refresh()
 		}
 		for key, command in pairs(commands) do
 			sbar.exec(command .. " 2>/dev/null", function(result)
-				data[key] = network.trim(result)
+				data[key] = utils.trim(result)
 				remaining = remaining - 1
 				if remaining == 0 then
 					render(network.parse(data))
@@ -117,11 +118,6 @@ end
 
 wifi:subscribe({ "routine", "forced", "system_woke", "wifi_change" }, refresh)
 local details = popup.bind(wifi, { on_open = refresh })
-details:watch(heading)
-for _, row in pairs(rows) do
-	details:watch(row)
-end
-details:watch(open_settings)
 open_settings:subscribe("mouse.clicked", function()
 	details:close()
 	sbar.exec(settings.commands.wifi)

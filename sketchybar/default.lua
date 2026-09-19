@@ -16,7 +16,6 @@ sbar.default({
 		color = colors.white,
 		padding_left = settings.paddings,
 		padding_right = settings.paddings,
-		background = { image = { corner_radius = 9 } },
 	},
 
 	label = {
@@ -37,11 +36,6 @@ sbar.default({
 		color = colors.transparent,
 		border_width = 0,
 		border_color = colors.bg2,
-		image = {
-			corner_radius = 9,
-			border_color = colors.grey,
-			border_width = 1,
-		},
 	},
 	popup = {
 		background = {

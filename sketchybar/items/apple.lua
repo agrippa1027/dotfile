@@ -38,7 +38,6 @@ for _, entry in ipairs(entries) do
 		icon = entry[2],
 		label = entry[3],
 	})
-	menu:watch(item)
 	item:subscribe("mouse.clicked", function()
 		sbar.exec(entry[4])
 		menu:close()
@@ -61,7 +60,7 @@ menu_state:subscribe("native_menus_toggle", function()
 			.. "'",
 		function(_, status)
 			if status == 0 then
-				sbar.bar({ hidden = not native_visible, topmost = true })
+				sbar.bar({ hidden = not native_visible })
 			end
 		end
 	)

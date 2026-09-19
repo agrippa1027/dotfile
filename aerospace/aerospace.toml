@@ -85,7 +85,10 @@ automatically-unhide-macos-hidden-apps = false
     alt-shift-a = 'move-node-to-workspace a'
 
     alt-tab = 'workspace-back-and-forth'
-    alt-shift-tab = 'move-workspace-to-monitor --wrap-around next'
+    alt-shift-tab = [
+        'move-workspace-to-monitor --wrap-around next',
+        'exec-and-forget sketchybar --trigger aerospace_workspace_change',
+    ]
 
     alt-f = 'fullscreen'
     # cmd-enter = 'exec-and-forget open -na "Ghostty"'

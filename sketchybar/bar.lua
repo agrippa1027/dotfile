@@ -24,8 +24,7 @@ sbar.bar({
 	-- Visibility and placement
 	hidden = false,
 	display = "all",
-	-- Keep SketchyBar above the auto-hidden native macOS menu bar.
-	topmost = true,
+	topmost = false,
 
 	-- Text rendering
 	font_smoothing = true,

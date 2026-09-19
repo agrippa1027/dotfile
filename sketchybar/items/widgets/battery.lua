@@ -77,7 +77,7 @@ battery:subscribe({ "forced", "routine", "power_source_change", "system_woke" },
 	end)
 end)
 
-local details = popup.bind(battery, {
+popup.bind(battery, {
 	settings_command = settings.commands.battery,
 	on_open = function()
 		sbar.exec("pmset -g batt", function(batt_info)
@@ -87,7 +87,6 @@ local details = popup.bind(battery, {
 		end)
 	end,
 })
-details:watch(remaining_time)
 
 sbar.add("bracket", "widgets.battery.bracket", { battery.name }, {
 	background = { color = colors.bg1 },

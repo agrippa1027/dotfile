@@ -7,7 +7,7 @@ local function equal(actual, expected, label)
 	assert(actual == expected, label .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual))
 end
 
-local items, commands, pending, timers = {}, {}, {}, {}
+local items, commands, pending = {}, {}, {}
 local function merge(target, source)
 	for key, value in pairs(source) do
 		if type(value) == "table" then
@@ -20,9 +20,6 @@ local function merge(target, source)
 		end
 	end
 end
-local pointer = { x = 1000, y = 1000 }
-local held_pointer
-local hold_pointer = false
 local api = {}
 function api.add(kind, name, members, properties)
 	if type(name) ~= "string" then
@@ -40,11 +37,7 @@ function api.add(kind, name, members, properties)
 		merge(self.properties, values)
 	end
 	function item:query()
-		local position = self.properties.position or "right"
-		local origin, children = { 10, 5 }, {}
-		if position:match("^popup%.") then
-			origin = { 5, 45 }
-		end
+		local children = {}
 		for _, child in ipairs(items) do
 			if items[child.name] == child and child.properties.position == "popup." .. self.name then
 				children[#children + 1] = child.name
@@ -54,10 +47,7 @@ function api.add(kind, name, members, properties)
 			popup = {
 				drawing = self.properties.popup.drawing and "on" or "off",
 				items = children,
-				background = { border_width = 1 },
 			},
-			geometry = { background = { padding_left = 5, padding_right = 5 } },
-			bounding_rects = { ["display-1"] = { origin = origin, size = { 100, 30 } } },
 		}
 	end
 	function item:subscribe(events, callback)
@@ -76,27 +66,9 @@ function api.query(name)
 	return items[name]:query()
 end
 function api.exec(command, callback)
-	if command:find("CGEventGetLocation", 1, true) then
-		if hold_pointer then
-			held_pointer = callback
-		else
-			callback(tostring(pointer.x) .. " " .. tostring(pointer.y))
-		end
-		return
-	end
 	commands[#commands + 1] = command
 	if callback then
 		pending[#pending + 1] = { command = command, callback = callback }
-	end
-end
-function api.delay(_, callback)
-	timers[#timers + 1] = callback
-end
-local function flush()
-	local current = timers
-	timers = {}
-	for _, callback in ipairs(current) do
-		callback()
 	end
 end
 local function reply(command, value, exit_code)
@@ -113,12 +85,6 @@ local function emit(name, event, env)
 	local item = assert(items[name], "Missing item " .. name)
 	local callback = assert(item.handlers[event], name .. " missing " .. event)
 	callback(env or { BUTTON = "left" })
-end
-local function exit(name)
-	-- Model item exits independently of native popup-frame global exits.
-	if items[name].handlers["mouse.exited"] then
-		emit(name, "mouse.exited")
-	end
 end
 local function child(owner)
 	for _, item in ipairs(items) do
@@ -144,8 +110,7 @@ emit("apple.bluetooth", "mouse.clicked")
 equal(commands[#commands], "open 'x-apple.systempreferences:com.apple.BluetoothSettings'", "Bluetooth action")
 emit("apple.logo", "mouse.clicked")
 equal(items["apple.logo"].properties.popup.drawing, true, "Apple click opens")
-emit("popup.events", "mouse.exited.global")
-flush()
+emit("apple.logo", "mouse.exited.global")
 equal(items["apple.logo"].properties.popup.drawing, false, "Apple global exit closes")
 
 emit("widgets.battery", "routine")
@@ -155,8 +120,7 @@ equal(items["widgets.battery"].properties.icon.color, require("colors").red, "Lo
 emit("widgets.battery", "mouse.clicked")
 reply("pmset -g batt", " 9%; discharging; 1:25 remaining")
 equal(items[child("widgets.battery")].properties.label, "1:25h", "Battery estimate")
-emit("popup.events", "mouse.exited.global")
-flush()
+emit("widgets.battery", "mouse.exited.global")
 equal(items["widgets.battery"].properties.popup.drawing, false, "Battery global exit closes")
 emit("widgets.battery", "mouse.clicked", { BUTTON = "right" })
 equal(
@@ -294,74 +258,4 @@ for _, name in ipairs({ "widgets.volume1", "widgets.volume2" }) do
 	equal(commands[#commands], require("settings").commands.sound, "Volume right click opens Sound settings")
 end
 
-if arg[2] == "--popup-regressions" then
-	equal(items["popup.events"].properties.updates, true, "Global exit receiver always updates")
-	equal(
-		items["widgets.battery"].handlers["mouse.exited.global"],
-		nil,
-		"Owner global subscription cannot suppress re-entry"
-	)
-	for _, owner in ipairs({ "apple.logo", "widgets.battery", "widgets.wifi" }) do
-		emit(owner, "mouse.clicked")
-		local row = child(owner)
-		emit(row, "mouse.entered")
-		exit(row)
-		flush()
-		equal(items[owner].properties.popup.drawing, false, owner .. " closes after leaving its popup row")
-	end
-
-	emit("apple.logo", "mouse.clicked")
-	emit("apple.logo", "mouse.entered")
-	emit("apple.logo", "mouse.exited")
-	emit("apple.settings", "mouse.entered")
-	flush()
-	equal(items["apple.logo"].properties.popup.drawing, true, "Owner to popup remains open")
-	pointer = { x = 2, y = 60 }
-	exit("apple.settings")
-	flush()
-	equal(items["apple.logo"].properties.popup.drawing, true, "Hovering popup padding stays open")
-	pointer = { x = 1000, y = 1000 }
-	emit("apple.settings", "mouse.entered")
-	exit("apple.settings")
-	emit("apple.activity", "mouse.entered")
-	flush()
-	equal(items["apple.logo"].properties.popup.drawing, true, "Crossing popup rows remains open")
-	exit("apple.activity")
-	emit("apple.logo", "mouse.entered")
-	flush()
-	equal(items["apple.logo"].properties.popup.drawing, true, "Popup to owner remains open")
-	emit("apple.logo", "mouse.exited")
-	flush()
-	equal(items["apple.logo"].properties.popup.drawing, false, "Owner to another bar item closes")
-
-	emit("apple.logo", "mouse.clicked")
-	emit("widgets.battery", "mouse.clicked")
-	equal(items["apple.logo"].properties.popup.drawing, false, "Opening another popup closes the previous one")
-	emit("popup.events", "mouse.exited.global")
-
-	emit("apple.logo", "mouse.clicked")
-	hold_pointer = true
-	emit("apple.settings", "mouse.entered")
-	exit("apple.settings")
-	flush()
-	emit("apple.logo", "mouse.entered")
-	held_pointer("1000 1000")
-	equal(items["apple.logo"].properties.popup.drawing, true, "Async pointer result cannot close after re-entry")
-	exit("apple.logo")
-	flush()
-	emit("popup.events", "mouse.exited.global")
-	emit("apple.logo", "mouse.clicked")
-	held_pointer("1000 1000")
-	equal(items["apple.logo"].properties.popup.drawing, true, "Async pointer result cannot close reopened popup")
-	exit("apple.logo")
-	flush()
-	held_pointer(". -.")
-	equal(items["apple.logo"].properties.popup.drawing, true, "Malformed pointer result is ignored")
-	hold_pointer = false
-	pointer = { x = 2, y = 60 }
-	exit("apple.logo")
-	flush()
-	equal(items["apple.logo"].properties.popup.drawing, true, "Direct owner to popup padding stays open")
-	emit("popup.events", "mouse.exited.global")
-end
 print("Widget behavior: " .. checks .. " assertions passed")
