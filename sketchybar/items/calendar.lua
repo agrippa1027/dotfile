@@ -4,7 +4,7 @@ local colors = require("colors")
 
 local cal = sbar.add("item", "calendar", {
 	icon = {
-		color = colors.black,
+		color = colors.red,
 		padding_left = 8,
 		font = {
 			family = settings.font.text,
@@ -13,7 +13,7 @@ local cal = sbar.add("item", "calendar", {
 		},
 	},
 	label = {
-		color = colors.black,
+		color = colors.white,
 		padding_right = 8,
 		width = 49,
 		align = "right",
@@ -26,9 +26,7 @@ local cal = sbar.add("item", "calendar", {
 	padding_right = 1,
 
 	background = {
-		color = colors.red,
-		border_color = colors.black,
-		border_width = 1,
+		color = colors.transparent,
 	},
 	click_script = "open -a 'Calendar'",
 })

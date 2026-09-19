@@ -22,7 +22,7 @@ for _, id in ipairs(workspace_order) do
 			padding_left = 3,
 			padding_right = 6,
 		},
-		background = { color = colors.bg1, corner_radius = 7 },
+		background = { color = colors.transparent, corner_radius = 7 },
 		padding_left = 2,
 		padding_right = 2,
 	})
@@ -93,7 +93,7 @@ local function refresh()
 								drawing = #labels > 0,
 								color = active and colors.black or colors.white,
 							},
-							background = { color = active and colors.orange or colors.bg1 },
+							background = { color = active and colors.orange or colors.transparent },
 						})
 					end
 				end

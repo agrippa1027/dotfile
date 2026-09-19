@@ -10,9 +10,7 @@ sbar.bar({
 	y_offset = settings.bar.y_offset,
 
 	-- Appearance
-	color = colors.bar.glass,
-	border_width = 1,
-	border_color = colors.bar.glass_border,
+	color = colors.transparent,
 	corner_radius = settings.corner_radius,
 	blur_radius = 50,
 	shadow = false,

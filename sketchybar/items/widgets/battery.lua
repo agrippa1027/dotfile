@@ -13,8 +13,8 @@ local battery = sbar.add("item", "widgets.battery", {
 		},
 	},
 	update_freq = 180,
-	background = { color = colors.bg1 },
-	popup = { align = "center" },
+	background = { color = colors.transparent },
+	popup = { align = "right" },
 })
 
 local remaining_time = sbar.add("item", "widgets.battery.remaining", {

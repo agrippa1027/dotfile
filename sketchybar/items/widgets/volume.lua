@@ -11,7 +11,7 @@ local volume = sbar.add("item", "widgets.volume", {
 		font = { family = settings.font.icon, style = settings.font.style_map.Regular, size = 14 },
 	},
 	label = { string = "??%" },
-	background = { color = colors.bg1 },
+	background = { color = colors.transparent },
 })
 
 local revision = 0

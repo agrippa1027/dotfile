@@ -8,7 +8,7 @@ local bluetooth = sbar.add("item", "widgets.bluetooth", {
 	update_freq = 60,
 	icon = { string = icons.bluetooth, color = colors.grey },
 	label = { string = "0", drawing = false },
-	background = { color = colors.bg1 },
+	background = { color = colors.transparent },
 })
 
 local command = "/usr/sbin/system_profiler SPBluetoothDataType -json -detailLevel mini 2>/dev/null"

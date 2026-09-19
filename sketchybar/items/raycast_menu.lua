@@ -17,7 +17,7 @@ local menu = sbar.add("item", "raycast.menu", {
 		padding_right = 8,
 	},
 	background = {
-		color = colors.bg1,
+		color = colors.transparent,
 		corner_radius = 7,
 	},
 	padding_left = 4,

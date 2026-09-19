@@ -12,7 +12,7 @@ local wifi = sbar.add("item", "widgets.wifi", {
 	update_freq = 30,
 	icon = { string = icons.wifi.disconnected, color = colors.grey },
 	label = { drawing = false },
-	background = { color = colors.bg1 },
+	background = { color = colors.transparent },
 	popup = { align = "center", height = settings.popup.wifi_height },
 })
 
