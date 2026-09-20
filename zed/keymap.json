@@ -35,6 +35,12 @@
       "space s g": "pane::DeploySearch",
       "g r": "editor::FindAllReferences",
 
+      // bookmarks
+      "space b m": "editor::ToggleBookmark",
+      "space b l": "editor::ViewBookmarks",
+      "space b n": "editor::GoToNextBookmark",
+      "space b p": "editor::GoToPreviousBookmark",
+
       // motions
       "shift-l": "vim::EndOfLine",
       "shift-h": "vim::FirstNonWhitespace",
