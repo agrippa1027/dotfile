@@ -1,6 +1,6 @@
 #!/bin/bash
 set -eu
-export PATH="/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 export CONFIG_DIR="${CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/sketchybar}"
 
 [[ -f "$CONFIG_DIR/runtime/sketchybar.so" ]] || {

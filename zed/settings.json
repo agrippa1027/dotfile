@@ -76,6 +76,13 @@
   "agent": {
     "tool_permissions": {
       "tools": {
+        "move_path": {
+          "always_allow": [
+            {
+              "pattern": "^Log/"
+            }
+          ]
+        },
         "fetch": {
           "default": "allow",
         },

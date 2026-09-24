@@ -1,0 +1,12 @@
+[[plugin.deps]]
+use = "AminurAlam/yazi-plugins:preview-epub"
+rev = "9997d5b"
+hash = "475ca512768cd51412461ee58b17188e"
+
+[[plugin.deps]]
+use = "pakhromov/to-pdf-preview"
+rev = "3d52710"
+hash = "2269e79e3fbe8ff7b41aa8fc04737397"
+
+[flavor]
+deps = []

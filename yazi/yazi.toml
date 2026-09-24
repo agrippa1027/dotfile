@@ -5,3 +5,16 @@ show_hidden = true
 edit = [
   { run = '${EDITOR:-nvim} "$@"', desc = "$EDITOR", block = true, for = "unix" },
 ]
+
+[plugin]
+prepend_previewers = [
+  { mime = '', run = 'preview-epub' },
+]
+
+prepend_preloaders = [
+  { mime = '', run = 'preview-epub' },
+]
+
+[[plugin.prepend_previewers]]
+mime = "application/pdf"
+run = "to-pdf-preview"

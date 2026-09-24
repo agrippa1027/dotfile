@@ -26,7 +26,7 @@ local menu = sbar.add("item", "raycast.menu", {
 
 menu:subscribe("mouse.clicked", function(env)
 	if env.BUTTON == "right" then
-		sbar.exec("/opt/homebrew/bin/sketchybar --trigger native_menus_toggle")
+		sbar.exec("$HOME/.local/bin/sketchybar --trigger native_menus_toggle")
 		return
 	end
 	sbar.exec("open 'raycast://extensions/raycast/navigation/search-menu-items'")
