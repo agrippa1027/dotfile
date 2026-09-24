@@ -28,12 +28,12 @@ automatically-unhide-macos-hidden-apps = false
     preset = 'qwerty'
 
 [gaps]
-    inner.horizontal = 4
-    inner.vertical = 4
-    outer.left = 8
-    outer.bottom = 8
-    outer.top = 48
-    outer.right = 8
+    inner.horizontal = 10
+    inner.vertical = 10
+    outer.left = 10
+    outer.bottom = 10
+    outer.top = 50
+    outer.right = 10
 
 [mode.main.binding]
     cmd-h = [] # Disable "hide application"
