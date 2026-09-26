@@ -244,6 +244,7 @@
   {
     "context": "Editor && showing_completions",
     "bindings": {
+      "tab": "editor::Tab", // indent instead of accepting the completion
       "ctrl-y": "editor::ConfirmCompletion", // accept the selected completion
     },
   },
@@ -254,6 +255,7 @@
   {
     "context": "Editor && edit_prediction && !showing_completions",
     "bindings": {
+      "tab": "editor::Tab", // indent instead of accepting the inline AI suggestion
       "ctrl-y": "editor::AcceptEditPrediction", // accept the inline AI suggestion
     },
   },
