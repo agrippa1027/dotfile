@@ -43,11 +43,14 @@
   // ============================================================
   //  EDITOR BEHAVIOR
   // ============================================================
+  "tab_size": 2,
+  "hard_tabs": false,
   "vim_mode": true,
   "relative_line_numbers": "enabled",
   "vertical_scroll_margin": 8,
   "cursor_blink": true,
   "format_on_save": "off",
+  "ensure_final_newline_on_save": false,
   "wrap_guides": [80, 120],
   "scrollbar": {
     "show": "never",
@@ -74,6 +77,7 @@
     "dock": "left",
   },
   "agent": {
+    "default_profile": "write",
     "tool_permissions": {
       "tools": {
         "move_path": {
@@ -112,7 +116,7 @@
     },
     "default_model": {
       "provider": "openai-subscribed",
-      "model": "gpt-5.6-sol",
+      "model": "gpt-6.1-sol",
       "enable_thinking": true,
       "effort": "high",
     },
@@ -125,6 +129,11 @@
   //  LANGUAGES
   // ============================================================
   "languages": {
+    "C": {
+      "show_edit_predictions": true,
+      "formatter": "language_server",
+      "format_on_save": "on",
+    },
     "JavaScript": {
       "formatter": "prettier",
       "format_on_save": "on",
