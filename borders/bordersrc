@@ -1,0 +1,12 @@
+#!/bin/bash
+
+# A neon-mint lift of Hubbamax's green accent, with quiet charcoal outlines.
+options=(
+  style=round
+  width=5.0
+  hidpi=on
+  active_color=0xff87ffaf
+  inactive_color=0xff303030
+)
+
+exec /opt/homebrew/bin/borders "${options[@]}"
