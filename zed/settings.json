@@ -51,6 +51,7 @@
   "cursor_blink": true,
   "format_on_save": "off",
   "ensure_final_newline_on_save": false,
+  "soft_wrap": "editor_width",
   "wrap_guides": [80, 120],
   "scrollbar": {
     "show": "never",
