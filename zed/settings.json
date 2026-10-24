@@ -24,7 +24,7 @@
   },
   "icon_theme": {
     "mode": "light",
-    "light": "Zed (Default)",
+    "light": "Catppuccin Frappé",
     "dark": "Zed (Default)",
   },
 
@@ -85,9 +85,9 @@
         "move_path": {
           "always_allow": [
             {
-              "pattern": "^Log/"
-            }
-          ]
+              "pattern": "^Log/",
+            },
+          ],
         },
         "fetch": {
           "default": "allow",
@@ -152,7 +152,12 @@
       "formatter": {
         "external": {
           "command": "/opt/homebrew/bin/stylua",
-          "arguments": ["--search-parent-directories", "--stdin-filepath", "{buffer_path}", "-"],
+          "arguments": [
+            "--search-parent-directories",
+            "--stdin-filepath",
+            "{buffer_path}",
+            "-",
+          ],
         },
       },
       "format_on_save": "on",
