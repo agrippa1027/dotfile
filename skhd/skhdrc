@@ -1,0 +1,81 @@
+# Option controls windows and Spaces; Command app launchers stay below.
+# Native Command shortcuts (including Command+Tab, A, F, S and Delete) are free.
+
+# Launchers
+cmd - return : /usr/bin/open -na Ghostty
+cmd + alt - return : /usr/bin/open -na Ghostty --args -e /opt/homebrew/bin/tmux new-session -A -s Work
+cmd + shift - return : /usr/bin/open -a Firefox
+cmd + shift - f : /usr/bin/open -a Finder
+cmd + shift - e : /usr/bin/open -a Zed
+cmd + shift - n : "$HOME/.config/skhd/wm.sh" editor
+cmd + shift - o : /usr/bin/open -a Obsidian
+cmd + shift - a : /usr/bin/open 'https://chatgpt.com'
+alt - k : /usr/bin/open -a TextEdit "$HOME/.config/skhd/README.md"
+ctrl + alt - l : /opt/homebrew/bin/skhd -k 'cmd + ctrl - q'
+
+# Directional focus and swaps
+alt - left : "$HOME/.config/skhd/wm.sh" focus west
+alt - down : "$HOME/.config/skhd/wm.sh" focus south
+alt - up : "$HOME/.config/skhd/wm.sh" focus north
+alt - right : "$HOME/.config/skhd/wm.sh" focus east
+alt + shift - left : /opt/homebrew/bin/yabai -m window --swap west
+alt + shift - down : /opt/homebrew/bin/yabai -m window --swap south
+alt + shift - up : /opt/homebrew/bin/yabai -m window --swap north
+alt + shift - right : /opt/homebrew/bin/yabai -m window --swap east
+
+# Native Spaces: move with Shift; add Control to leave focus behind.
+alt - 1 : "$HOME/.config/skhd/wm.sh" space 1
+alt - 2 : "$HOME/.config/skhd/wm.sh" space 2
+alt - 3 : "$HOME/.config/skhd/wm.sh" space 3
+alt - 4 : "$HOME/.config/skhd/wm.sh" space 4
+alt - 5 : "$HOME/.config/skhd/wm.sh" space 5
+alt - 6 : "$HOME/.config/skhd/wm.sh" space 6
+alt - 7 : "$HOME/.config/skhd/wm.sh" space 7
+alt - 8 : "$HOME/.config/skhd/wm.sh" space 8
+alt - 9 : "$HOME/.config/skhd/wm.sh" space 9
+alt - 0 : "$HOME/.config/skhd/wm.sh" space 0
+alt - a : "$HOME/.config/skhd/wm.sh" space a
+alt + shift - 1 : "$HOME/.config/skhd/wm.sh" move 1 follow
+alt + shift - 2 : "$HOME/.config/skhd/wm.sh" move 2 follow
+alt + shift - 3 : "$HOME/.config/skhd/wm.sh" move 3 follow
+alt + shift - 4 : "$HOME/.config/skhd/wm.sh" move 4 follow
+alt + shift - 5 : "$HOME/.config/skhd/wm.sh" move 5 follow
+alt + shift - 6 : "$HOME/.config/skhd/wm.sh" move 6 follow
+alt + shift - 7 : "$HOME/.config/skhd/wm.sh" move 7 follow
+alt + shift - 8 : "$HOME/.config/skhd/wm.sh" move 8 follow
+alt + shift - 9 : "$HOME/.config/skhd/wm.sh" move 9 follow
+alt + shift - 0 : "$HOME/.config/skhd/wm.sh" move 0 follow
+ctrl + alt + shift - 1 : "$HOME/.config/skhd/wm.sh" move 1
+ctrl + alt + shift - 2 : "$HOME/.config/skhd/wm.sh" move 2
+ctrl + alt + shift - 3 : "$HOME/.config/skhd/wm.sh" move 3
+ctrl + alt + shift - 4 : "$HOME/.config/skhd/wm.sh" move 4
+ctrl + alt + shift - 5 : "$HOME/.config/skhd/wm.sh" move 5
+ctrl + alt + shift - 6 : "$HOME/.config/skhd/wm.sh" move 6
+ctrl + alt + shift - 7 : "$HOME/.config/skhd/wm.sh" move 7
+ctrl + alt + shift - 8 : "$HOME/.config/skhd/wm.sh" move 8
+ctrl + alt + shift - 9 : "$HOME/.config/skhd/wm.sh" move 9
+ctrl + alt + shift - 0 : "$HOME/.config/skhd/wm.sh" move 0
+alt - n : "$HOME/.config/skhd/wm.sh" cycle-space next
+alt - p : "$HOME/.config/skhd/wm.sh" cycle-space prev
+alt - escape : /opt/homebrew/bin/yabai -m space --focus recent
+alt - tab : "$HOME/.config/skhd/wm.sh" cycle-window next
+alt + shift - tab : "$HOME/.config/skhd/wm.sh" move-space-display
+ctrl + alt - tab : "$HOME/.config/skhd/wm.sh" cycle-display next
+ctrl + alt + shift - tab : "$HOME/.config/skhd/wm.sh" cycle-display prev
+
+# Layout and ricing
+alt - t : /opt/homebrew/bin/yabai -m window --toggle float
+alt - j : /opt/homebrew/bin/yabai -m window --toggle split
+alt - f : /opt/homebrew/bin/yabai -m window --toggle zoom-fullscreen
+ctrl + alt - f : /opt/homebrew/bin/yabai -m window --toggle native-fullscreen
+alt - o : "$HOME/.config/skhd/wm.sh" sticky
+alt - s : "$HOME/.config/skhd/wm.sh" scratch
+ctrl + alt - s : /opt/homebrew/bin/yabai -m window --scratchpad scratch
+ctrl + alt - backspace : "$HOME/.config/skhd/wm.sh" opacity
+ctrl + alt + shift - backspace : /opt/homebrew/bin/yabai -m space --toggle gap
+alt - 0x18 : "$HOME/.config/skhd/wm.sh" resize width 40
+alt - 0x1B : "$HOME/.config/skhd/wm.sh" resize width -40
+alt + shift - 0x18 : "$HOME/.config/skhd/wm.sh" resize height 40
+alt + shift - 0x1B : "$HOME/.config/skhd/wm.sh" resize height -40
+alt + shift - space : "$HOME/.local/bin/sketchybar" --bar hidden=toggle
+ctrl + alt + shift - r : /bin/bash "$HOME/.config/yabai/yabairc" && /opt/homebrew/bin/skhd --reload

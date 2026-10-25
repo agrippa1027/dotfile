@@ -57,7 +57,7 @@ local labels = {
 	unavailable = "Unavailable",
 }
 
-local function render(status)
+local function render(status, show_details)
 	local connected = status.state == "connected"
 	wifi:set({
 		icon = {
@@ -65,6 +65,9 @@ local function render(status)
 			color = connected and colors.white or (status.state == "connecting" and colors.orange or colors.grey),
 		},
 	})
+	if not show_details then
+		return
+	end
 	heading:set({ label = status.ssid or "Wi-Fi" })
 	rows.connection:set({ label = labels[status.state] })
 	rows.ssid:set({ label = status.ssid or (connected and "Hidden by macOS" or "—") })
@@ -74,42 +77,87 @@ local function render(status)
 end
 
 local interface
-local updating = false
+local started_at
+local generation = 0
+local pending = false
 local function refresh()
-	if updating then
+	local now = os.time()
+	-- Allow the native per-command 60s timeout before recovering on an event/routine.
+	if started_at and now - started_at < 65 then
+		pending = true
 		return
 	end
-	updating = true
+	generation = generation + 1
+	local request = generation
+	started_at = now
+	pending = false
+	local show_details = wifi:query().popup.drawing == "on"
+
+	local function exec(command, callback)
+		started_at = os.time()
+		sbar.exec(command .. " 2>/dev/null", function(result)
+			if request == generation then
+				callback(utils.trim(result))
+			end
+		end)
+	end
+
+	local function finish(data)
+		render(network.parse(data), show_details and wifi:query().popup.drawing == "on")
+		started_at = nil
+		if pending then
+			refresh()
+		end
+	end
+
 	local function read_status()
 		if not interface then
-			render(network.parse({}))
-			updating = false
+			finish({})
 			return
 		end
 		local data = { interface = interface }
-		local remaining = 4
 		local device = utils.quote(interface)
-		local commands = {
-			power = "/usr/sbin/networksetup -getairportpower " .. device,
-			summary = "/usr/sbin/ipconfig getsummary " .. device,
-			ip = "/usr/sbin/ipconfig getifaddr " .. device,
-			link = "/sbin/ifconfig " .. device,
-		}
-		for key, command in pairs(commands) do
-			sbar.exec(command .. " 2>/dev/null", function(result)
-				data[key] = utils.trim(result)
-				remaining = remaining - 1
-				if remaining == 0 then
-					render(network.parse(data))
-					updating = false
-				end
+		local function read_ip()
+			if network.parse(data).state ~= "connecting" then
+				finish(data)
+				return
+			end
+			exec("/usr/sbin/ipconfig getifaddr " .. device, function(result)
+				data.ip = result
+				finish(data)
 			end)
 		end
+		local function read_link()
+			exec("/sbin/ifconfig " .. device, function(result)
+				data.link = result
+				read_ip()
+			end)
+		end
+
+		if not show_details then
+			read_link()
+			return
+		end
+		exec("/usr/sbin/networksetup -getairportpower " .. device, function(result)
+			data.power = result
+			if network.parse(data).state == "off" then
+				finish(data)
+				return
+			end
+			exec("/usr/sbin/ipconfig getsummary " .. device, function(summary)
+				data.summary = summary
+				if summary:match("LinkStatusActive%s*:%s*%u+") then
+					read_ip()
+				else
+					read_link()
+				end
+			end)
+		end)
 	end
 	if interface then
 		read_status()
 	else
-		sbar.exec("/usr/sbin/networksetup -listallhardwareports", function(result)
+		exec("/usr/sbin/networksetup -listallhardwareports", function(result)
 			interface = network.interface(result)
 			read_status()
 		end)

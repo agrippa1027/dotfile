@@ -48,29 +48,21 @@ local open_settings = sbar.add("item", "widgets.bluetooth.settings", {
 	label = { string = "Open Bluetooth Settings", color = colors.blue },
 })
 
-local command = "/usr/sbin/system_profiler SPBluetoothDataType -json -detailLevel mini 2>/dev/null"
-local updating = false
+local power_command = "/usr/bin/defaults read /Library/Preferences/com.apple.Bluetooth ControllerPowerState 2>/dev/null"
+local inventory_command = "/usr/sbin/system_profiler SPBluetoothDataType -json -detailLevel mini 2>/dev/null"
 
-local function render(report, status)
-	local entries = type(report) == "table" and report.SPBluetoothDataType
-	local data = type(entries) == "table" and entries[1]
-	local controller = type(data) == "table" and data.controller_properties
-	local powered = status == 0 and type(controller) == "table" and controller.controller_state == "attrib_on"
-	local names = {}
-
-	if powered and type(data.device_connected) == "table" then
-		for _, device in ipairs(data.device_connected) do
-			for name in pairs(device) do
-				names[#names + 1] = name
-				break
-			end
-		end
-		table.sort(names)
+local function render(powered, names)
+	if powered ~= nil then
+		bluetooth:set({ icon = { color = powered and colors.white or colors.grey } })
 	end
-
-	bluetooth:set({ icon = { color = powered and colors.white or colors.grey } })
+	-- A power-only check cannot replace the last device inventory.
+	if powered and not names then
+		return
+	end
+	names = names or {}
 	status_item:set({
-		label = not powered and "Radio off"
+		label = powered == nil and "Unavailable"
+			or (not powered and "Radio off")
 			or (#names == 0 and "No devices connected" or string.format("%d connected", #names)),
 	})
 
@@ -80,15 +72,84 @@ local function render(report, status)
 	end
 end
 
+local function render_report(report, status)
+	local entries = type(report) == "table" and report.SPBluetoothDataType
+	local data = type(entries) == "table" and entries[1]
+	local controller = type(data) == "table" and data.controller_properties
+	local powered
+	if status == 0 and type(controller) == "table" then
+		if controller.controller_state == "attrib_on" then
+			powered = true
+		elseif controller.controller_state == "attrib_off" then
+			powered = false
+		end
+	end
+	local names = {}
+	if powered and type(data.device_connected) == "table" then
+		for _, device in ipairs(data.device_connected) do
+			if type(device) == "table" then
+				for name in pairs(device) do
+					if type(name) == "string" then
+						names[#names + 1] = name
+						break
+					end
+				end
+			end
+		end
+		table.sort(names)
+	end
+	render(powered, names)
+end
+
+local started_at
+local generation = 0
+local pending = false
 local function refresh()
-	if updating then
+	local now = os.time()
+	-- Native exec workers have a 60s alarm; recover on the next event after that.
+	if started_at and now - started_at < 65 then
+		pending = true
 		return
 	end
-	updating = true
-	sbar.exec(command, function(report, status)
-		updating = false
-		render(report, status)
-	end)
+	generation = generation + 1
+	local request = generation
+	pending = false
+
+	local function finish()
+		started_at = nil
+		if pending then
+			refresh()
+		end
+	end
+
+	local function inventory()
+		started_at = os.time()
+		sbar.exec(inventory_command, function(report, status)
+			if request ~= generation then
+				return
+			end
+			render_report(report, status)
+			finish()
+		end)
+	end
+
+	if bluetooth:query().popup.drawing == "on" then
+		inventory()
+	else
+		started_at = os.time()
+		sbar.exec(power_command, function(result, status)
+			if request ~= generation then
+				return
+			end
+			local value = type(result) == "string" and result:match("^%s*([01])%s*$")
+			if status ~= 0 or not value then
+				inventory()
+				return
+			end
+			render(value == "1")
+			finish()
+		end)
+	end
 end
 
 bluetooth:subscribe({ "routine", "forced", "system_woke" }, refresh)

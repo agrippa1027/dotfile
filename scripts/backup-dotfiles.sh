@@ -28,15 +28,17 @@ checksum="$archive.sha256"
 backup_items=(
   .config/.zshrc
   .config/aerospace
+  .config/yabai
+  .config/skhd
+  .config/sketchybar
+  .config/borders
   .config/ghostty
-  .config/kitty
   .config/tmux
   .config/starship.toml
   .config/zed/settings.json
   .config/zed/keymap.json
   .config/theme
   .config/scripts
-  .config/MAC_TUNEUP.md
 )
 
 for backup_item in "${backup_items[@]}"; do

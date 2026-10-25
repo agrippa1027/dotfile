@@ -11,11 +11,14 @@ brew install git neovim tmux yazi btop fzf ripgrep fd starship zoxide stow deno 
 brew tap FelixKratz/formulae
 brew trust --formula felixkratz/formulae/sketchybar
 brew install sketchybar
+# HEAD includes the Space-creation fix required by macOS 26.6 (upstream #2799).
+brew install --HEAD asmvik/formulae/yabai
+brew install asmvik/formulae/skhd
 "$HOME/.config/scripts/install-sketchybar-lua.sh"
 mkdir -p "$HOME/.nvm"
 
 echo "Installing UI apps..."
-brew install --cask aerospace ghostty raycast font-maple-mono-nf
+brew install --cask ghostty raycast font-maple-mono-nf
 
 zinit_home="${XDG_DATA_HOME:-${HOME}/.local/share}/zinit/zinit.git"
 echo "Ensuring Zinit is installed..."
@@ -42,4 +45,5 @@ fi
 ln -sfn "$HOME/.config/.zshrc" "$HOME/.zshrc"
 
 echo "Bootstrap finished."
+echo "Window manager: grant yabai/skhd Accessibility access, run sudo bash ~/.config/yabai/setup-scripting-addition.sh, then yabai --start-service and skhd --start-service."
 echo "Next: run ~/.config/scripts/check-configs.sh"

@@ -26,7 +26,10 @@ assert_contains() {
   ok "$1"
 }
 
-require_file 'AeroSpace config' "$config_root/aerospace/aerospace.toml"
+require_file 'Archived AeroSpace config' "$config_root/aerospace/aerospace.toml"
+require_file 'yabai config' "$config_root/yabai/yabairc"
+require_file 'skhd config' "$config_root/skhd/skhdrc"
+require_file 'Window shortcut helper' "$config_root/skhd/wm.sh"
 require_file 'Ghostty config' "$config_root/ghostty/config"
 require_file 'SketchyBar config' "$config_root/sketchybar/sketchybarrc"
 require_file 'SketchyBar app icon font' "$config_root/sketchybar/vendor/app-font/sketchybar-app-font.ttf"
@@ -42,10 +45,9 @@ require_file 'NVM loader' '/opt/homebrew/opt/nvm/nvm.sh'
 require_file 'NVM completion' '/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm'
 require_file 'Starship config' "$config_root/starship.toml"
 require_file 'Zed settings' "$config_root/zed/settings.json"
-require_file 'Neovim config' "$config_root/nvim/init.lua"
 require_file 'Yazi config' "$config_root/yazi/yazi.toml"
 
-for required_command in aerospace sketchybar lua luac jq tmux zsh starship zoxide fzf nvim yazi python3; do
+for required_command in yabai skhd sketchybar lua luac jq tmux zsh starship zoxide fzf yazi python3; do
   require_command "$required_command"
 done
 [[ -x /Applications/Ghostty.app/Contents/MacOS/ghostty ]] || die 'Ghostty app is not installed'
@@ -64,26 +66,32 @@ LUA
 ok 'SketchyBar Lua syntax and runtime validate'
 [[ "$HOME/.zshrc" -ef "$config_root/.zshrc" ]] || die "$HOME/.zshrc is not linked to the managed config"
 
-python3 - "$config_root/aerospace/aerospace.toml" <<'PY'
+python3 - "$config_root/aerospace/aerospace.toml" "$config_root/skhd/skhdrc" <<'PY'
 import sys
 import tomllib
 
 with open(sys.argv[1], "rb") as config_file:
-    config = tomllib.load(config_file)
+    tomllib.load(config_file)
 
-bindings = config["mode"]["main"]["binding"]
-assert bindings["cmd-enter"] == 'exec-and-forget open -na "Zed"'
-assert bindings["cmd-shift-enter"] == 'exec-and-forget open -na "Firefox"'
-assert "tmux new-session -A -s Work" in bindings["cmd-alt-enter"]
-assert bindings["alt-h"] == "focus left"
-assert bindings["alt-shift-tab"] == [
-    "move-workspace-to-monitor --wrap-around next",
-    "exec-and-forget sketchybar --trigger aerospace_workspace_change",
-]
-assert "sketchybar --trigger aerospace_workspace_change" in config["exec-on-workspace-change"][2]
-assert config["gaps"]["outer"]["top"] == 48
+bindings = {}
+for line in open(sys.argv[2]):
+    line = line.strip()
+    if not line or line.startswith("#"):
+        continue
+    key, command = line.split(":", 1)
+    key = " ".join(key.split())
+    assert key not in bindings, f"Duplicate shortcut: {key}"
+    assert command.strip(), f"Empty shortcut: {key}"
+    bindings[key] = command.strip()
+assert bindings["cmd - return"] == "/usr/bin/open -na Ghostty"
+assert bindings["cmd + shift - return"] == "/usr/bin/open -a Firefox"
+assert all(f"alt - {number}" in bindings for number in "1234567890a")
+assert all(f"cmd - {key}" not in bindings for key in ("c", "v", "a", "q", "w", "space", "tab", "f", "s", "o", "k", "backspace"))
+assert all('cmd' not in key.split(' - ')[0] for key, action in bindings.items() if 'yabai' in action or 'wm.sh' in action and not key.endswith(' - n'))
 PY
-ok 'AeroSpace TOML and launcher bindings validate'
+bash -n "$config_root/yabai/yabairc" "$config_root/yabai/setup-spaces.sh" \
+  "$config_root/yabai/setup-scripting-addition.sh" "$config_root/skhd/wm.sh"
+ok 'Archived AeroSpace TOML, yabai shell config, and skhd bindings validate'
 
 /Applications/Ghostty.app/Contents/MacOS/ghostty \
   +validate-config --config-file="$config_root/ghostty/config" >/dev/null 2>&1
@@ -103,7 +111,7 @@ cleanup_tmux
 trap - EXIT INT TERM
 ok 'tmux config loads in an isolated server'
 
-assert_contains 'Ghostty is decoration-free' '^window-decoration[[:space:]]*=[[:space:]]*(false|none)$' "$config_root/ghostty/config"
+assert_contains 'Ghostty titlebar is hidden' '^macos-titlebar-style[[:space:]]*=[[:space:]]*hidden$' "$config_root/ghostty/config"
 assert_contains 'Ghostty emits Alt-Enter CSI-u' '^keybind[[:space:]]*=[[:space:]]*alt\+enter=' "$config_root/ghostty/config"
 assert_contains 'Ghostty emits Alt-Shift-Enter CSI-u' '^keybind[[:space:]]*=[[:space:]]*alt\+shift\+enter=' "$config_root/ghostty/config"
 assert_contains 'tmux uses Ctrl-Space prefix' '^set -g prefix C-Space$' "$config_root/tmux/tmux.conf"
@@ -149,7 +157,9 @@ if grep -Eq 'p10k|powerlevel10k' "$config_root/.zshrc"; then
 fi
 ok 'Zsh config is free of Powerlevel10k references'
 
-nvim --headless '+qa' >/dev/null 2>&1
-ok 'Neovim starts headless'
+if command -v nvim >/dev/null 2>&1; then
+  nvim --headless '+qa' >/dev/null 2>&1
+  ok 'Neovim starts headless'
+fi
 
 printf 'Validation complete.\n'

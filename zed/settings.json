@@ -82,6 +82,9 @@
     "default_profile": "write",
     "tool_permissions": {
       "tools": {
+        "search_web": {
+          "default": "allow"
+        },
         "move_path": {
           "always_allow": [
             {
@@ -117,7 +120,7 @@
       "network_hosts": ["zed.dev"],
     },
     "default_model": {
-      "provider": "openai-subscribed",
+      "provider": "zed.dev",
       "model": "gpt-6.1-sol",
       "enable_thinking": true,
       "effort": "high",

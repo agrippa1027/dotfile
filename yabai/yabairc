@@ -1,0 +1,89 @@
+#!/bin/bash
+# Hubbamax + mint, with Omarchy-style keys in ~/.config/skhd/skhdrc.
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+root="${XDG_CONFIG_HOME:-$HOME/.config}/yabai"
+
+# Keep AeroSpace in charge until Accessibility and the scripting addition are ready.
+if [[ -e "$root/.setup-pending" ]]; then
+  yabai -m config layout float
+  exit 0
+fi
+
+# Feature checks below will expose an unavailable scripting addition.
+sudo -n /opt/homebrew/bin/yabai --load-sa || true
+
+yabai -m config layout bsp
+yabai -m config split_type auto
+yabai -m config split_ratio 0.50
+yabai -m config auto_balance off
+yabai -m config window_placement second_child
+yabai -m config window_insertion_point focused
+yabai -m config window_zoom_persist on
+yabai -m config display_arrangement_order default
+yabai -m config mouse_follows_focus on
+yabai -m config focus_follows_mouse off
+yabai -m config mouse_modifier alt
+yabai -m config mouse_action1 move
+yabai -m config mouse_action2 resize
+yabai -m config mouse_drop_action swap
+
+# The 50px reservation matches the existing floating SketchyBar.
+yabai -m config external_bar all:50:0
+yabai -m config top_padding 0
+yabai -m config bottom_padding 10
+yabai -m config left_padding 10
+yabai -m config right_padding 10
+yabai -m config window_gap 10
+yabai -m config insert_feedback_color 0xff87ffaf
+
+# Focus stays crisp; inactive windows get a subtle fade.
+yabai -m config window_opacity on
+yabai -m config active_window_opacity 1.0
+yabai -m config normal_window_opacity 0.96
+yabai -m config window_opacity_duration 0.15
+yabai -m config window_shadow float
+yabai -m config window_animation_duration 0.18
+yabai -m config window_animation_easing ease_out_cubic
+
+"$root/setup-spaces.sh" || exit 1
+
+# yabai rejects numeric labels, so keep their display names behind a ws- prefix.
+space_index() {
+  yabai -m query --spaces | jq -er --arg label "ws-$1" 'first(.[] | select(.label == $label) | .index)'
+}
+
+# Remove only our own definitions when reloading.
+for label in browser editor notes books api chat terminal dialogs scratch; do
+  yabai -m rule --remove "rice-$label" 2>/dev/null || true
+done
+yabai -m rule --add label=rice-browser app='^(Firefox|Google Chrome)$' space="$(space_index 1)"
+yabai -m rule --add label=rice-editor app='^Zed$' space="$(space_index 2)"
+yabai -m rule --add label=rice-notes app='^Obsidian$' space="$(space_index 3)"
+yabai -m rule --add label=rice-books app='^calibre$' space="$(space_index 4)"
+yabai -m rule --add label=rice-api app='^(Bruno|bruno)$' space="$(space_index 6)"
+yabai -m rule --add label=rice-chat app='^Discord$' space="$(space_index 7)"
+yabai -m rule --add label=rice-terminal app='^Ghostty$' title!='^Scratchpad$' space="$(space_index 9)"
+yabai -m rule --add label=rice-dialogs app='^(System Settings|System Preferences|Activity Monitor|Finder|Messages|WhatsApp|Font Book|Raycast|BetterDisplay)$' manage=off
+yabai -m rule --add label=rice-scratch app='^Ghostty$' title='^Scratchpad$' manage=off scratchpad=scratch grid=10:10:1:1:8:8 opacity=1.0
+
+# Workspace labels use app names, not window titles. Remove the old noisy hook on reload.
+yabai -m signal --remove rice-window_title_changed 2>/dev/null || true
+for event in window_created window_destroyed window_focused window_moved window_minimized window_deminimized space_changed space_created space_destroyed display_changed display_removed display_moved display_resized system_woke; do
+  yabai -m signal --remove "rice-$event" 2>/dev/null || true
+  # Expand HOME when the signal runs.
+  # shellcheck disable=SC2016
+  yabai -m signal --add label="rice-$event" event="$event" \
+    action='"$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+done
+yabai -m signal --remove rice-display_added 2>/dev/null || true
+# Reconcile Spaces after docking; normal config reloads preserve manual placement.
+# shellcheck disable=SC2016
+yabai -m signal --add label=rice-display_added event=display_added \
+  action='"$HOME/.config/yabai/setup-spaces.sh" --arrange; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+yabai -m signal --remove rice-dock 2>/dev/null || true
+# Expand HOME when the signal runs.
+  # shellcheck disable=SC2016
+yabai -m signal --add label=rice-dock event=dock_did_restart \
+  action='sudo -n /opt/homebrew/bin/yabai --load-sa; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+
+"$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change

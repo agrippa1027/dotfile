@@ -16,7 +16,7 @@ local function glass()
 	}
 end
 
-sbar.add("bracket", "group.workspaces", { "apple.logo", "/workspace\\..*/", "raycast.menu" }, glass())
+sbar.add("bracket", "group.workspaces", { "/workspace\\..*/" }, glass())
 sbar.add("bracket", "group.calendar", { "calendar" }, glass())
 sbar.add(
 	"bracket",

@@ -29,6 +29,8 @@ defaults write com.apple.screencapture location -string "$HOME/Screenshots"
 defaults write com.apple.screencapture type -string png
 
 # General UX
+# yabai needs the desktop window to focus an otherwise empty monitor.
+defaults write com.apple.WindowManager StandardHideDesktopIcons -bool false
 defaults write NSGlobalDomain NSDocumentSaveNewDocumentsToCloud -bool false
 defaults write com.apple.print.PrintingPrefs "Quit When Finished" -bool true
 defaults write com.apple.desktopservices DSDontWriteNetworkStores -bool true

@@ -1,7 +1,7 @@
 font-family = "Comic Code Ligatures"
 font-thicken = true
-font-size = 18
-adjust-cell-height = 17
+font-size = 17
+adjust-cell-height = 16
 theme = hubbamax.ghostty
 shell-integration-features = no-cursor
 cursor-style = block

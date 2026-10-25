@@ -4,6 +4,7 @@ return {
 	grey = 0xff767676,
 	red = 0xffd75f87,
 	green = 0xff87d787,
+	accent = 0xff87ffaf,
 	blue = 0xff5fafd7,
 	orange = 0xffd7af87,
 	cyan = 0xff87afaf,

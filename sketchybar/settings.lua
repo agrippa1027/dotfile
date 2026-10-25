@@ -13,6 +13,9 @@ return {
 		},
 	},
 	corner_radius = 8,
+	workspaces = {
+		small_group_edge_padding = 18,
+	},
 	bar = {
 		height = 38,
 		margin = 8,
