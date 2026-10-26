@@ -112,6 +112,7 @@ trap - EXIT INT TERM
 ok 'tmux config loads in an isolated server'
 
 assert_contains 'Ghostty titlebar is hidden' '^macos-titlebar-style[[:space:]]*=[[:space:]]*hidden$' "$config_root/ghostty/config"
+assert_contains 'Ghostty emits Shift-Enter CSI-u' '^keybind[[:space:]]*=[[:space:]]*shift\+enter=text:\\x1b\[13;2u$' "$config_root/ghostty/config"
 assert_contains 'Ghostty emits Alt-Enter CSI-u' '^keybind[[:space:]]*=[[:space:]]*alt\+enter=' "$config_root/ghostty/config"
 assert_contains 'Ghostty emits Alt-Shift-Enter CSI-u' '^keybind[[:space:]]*=[[:space:]]*alt\+shift\+enter=' "$config_root/ghostty/config"
 assert_contains 'tmux uses Ctrl-Space prefix' '^set -g prefix C-Space$' "$config_root/tmux/tmux.conf"

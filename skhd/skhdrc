@@ -7,21 +7,22 @@ cmd + alt - return : /usr/bin/open -na Ghostty --args -e /opt/homebrew/bin/tmux 
 cmd + shift - return : /usr/bin/open -a Firefox
 cmd + shift - f : /usr/bin/open -a Finder
 cmd + shift - e : /usr/bin/open -a Zed
+cmd + shift - l : "$HOME/.config/skhd/log.sh"
 cmd + shift - n : "$HOME/.config/skhd/wm.sh" editor
-cmd + shift - o : /usr/bin/open -a Obsidian
+# cmd + shift - o : /usr/bin/open -a Obsidian
 cmd + shift - a : /usr/bin/open 'https://chatgpt.com'
-alt - k : /usr/bin/open -a TextEdit "$HOME/.config/skhd/README.md"
+# alt - k : /usr/bin/open -a TextEdit "$HOME/.config/skhd/README.md"
 ctrl + alt - l : /opt/homebrew/bin/skhd -k 'cmd + ctrl - q'
 
 # Directional focus and swaps
-alt - left : "$HOME/.config/skhd/wm.sh" focus west
-alt - down : "$HOME/.config/skhd/wm.sh" focus south
-alt - up : "$HOME/.config/skhd/wm.sh" focus north
-alt - right : "$HOME/.config/skhd/wm.sh" focus east
-alt + shift - left : /opt/homebrew/bin/yabai -m window --swap west
-alt + shift - down : /opt/homebrew/bin/yabai -m window --swap south
-alt + shift - up : /opt/homebrew/bin/yabai -m window --swap north
-alt + shift - right : /opt/homebrew/bin/yabai -m window --swap east
+alt - h : "$HOME/.config/skhd/wm.sh" focus west
+alt - j : "$HOME/.config/skhd/wm.sh" focus south
+alt - k : "$HOME/.config/skhd/wm.sh" focus north
+alt - l : "$HOME/.config/skhd/wm.sh" focus east
+alt + shift - h : /opt/homebrew/bin/yabai -m window --swap west
+alt + shift - j : /opt/homebrew/bin/yabai -m window --swap south
+alt + shift - k : /opt/homebrew/bin/yabai -m window --swap north
+alt + shift - l : /opt/homebrew/bin/yabai -m window --swap east
 
 # Native Spaces: move with Shift; add Control to leave focus behind.
 alt - 1 : "$HOME/.config/skhd/wm.sh" space 1
@@ -58,7 +59,7 @@ ctrl + alt + shift - 0 : "$HOME/.config/skhd/wm.sh" move 0
 alt - n : "$HOME/.config/skhd/wm.sh" cycle-space next
 alt - p : "$HOME/.config/skhd/wm.sh" cycle-space prev
 alt - escape : /opt/homebrew/bin/yabai -m space --focus recent
-alt - tab : "$HOME/.config/skhd/wm.sh" cycle-window next
+alt - tab : /opt/homebrew/bin/yabai -m space --focus recent
 alt + shift - tab : "$HOME/.config/skhd/wm.sh" move-space-display
 ctrl + alt - tab : "$HOME/.config/skhd/wm.sh" cycle-display next
 ctrl + alt + shift - tab : "$HOME/.config/skhd/wm.sh" cycle-display prev

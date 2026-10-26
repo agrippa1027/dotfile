@@ -42,7 +42,8 @@ yabai -m config active_window_opacity 1.0
 yabai -m config normal_window_opacity 0.96
 yabai -m config window_opacity_duration 0.15
 yabai -m config window_shadow float
-yabai -m config window_animation_duration 0.18
+# CoreVideo display-link animations can deadlock during sleep/display changes.
+yabai -m config window_animation_duration 0.0
 yabai -m config window_animation_easing ease_out_cubic
 
 "$root/setup-spaces.sh" || exit 1
@@ -53,7 +54,7 @@ space_index() {
 }
 
 # Remove only our own definitions when reloading.
-for label in browser editor notes books api chat terminal dialogs scratch; do
+for label in browser editor notes books api chat terminal dialogs scratch media-opaque; do
   yabai -m rule --remove "rice-$label" 2>/dev/null || true
 done
 yabai -m rule --add label=rice-browser app='^(Firefox|Google Chrome)$' space="$(space_index 1)"
@@ -62,9 +63,13 @@ yabai -m rule --add label=rice-notes app='^Obsidian$' space="$(space_index 3)"
 yabai -m rule --add label=rice-books app='^calibre$' space="$(space_index 4)"
 yabai -m rule --add label=rice-api app='^(Bruno|bruno)$' space="$(space_index 6)"
 yabai -m rule --add label=rice-chat app='^Discord$' space="$(space_index 7)"
-yabai -m rule --add label=rice-terminal app='^Ghostty$' title!='^Scratchpad$' space="$(space_index 9)"
+yabai -m rule --add label=rice-terminal app='^Ghostty$' title!='^Scratchpad$' space="^$(space_index 9)"
 yabai -m rule --add label=rice-dialogs app='^(System Settings|System Preferences|Activity Monitor|Finder|Messages|WhatsApp|Font Book|Raycast|BetterDisplay)$' manage=off
 yabai -m rule --add label=rice-scratch app='^Ghostty$' title='^Scratchpad$' manage=off scratchpad=scratch grid=10:10:1:1:8:8 opacity=1.0
+
+# Whole-window fading also fades video content; keep these apps opaque.
+yabai -m rule --add label=rice-media-opaque app='^(Firefox|IINA|Stremio|VLC|mpv|QuickTime Player)$' opacity=1.0
+yabai -m rule --apply rice-media-opaque
 
 # Workspace labels use app names, not window titles. Remove the old noisy hook on reload.
 yabai -m signal --remove rice-window_title_changed 2>/dev/null || true

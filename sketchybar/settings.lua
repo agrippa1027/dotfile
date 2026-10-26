@@ -18,10 +18,11 @@ return {
 	},
 	bar = {
 		height = 38,
-		margin = 8,
+		-- Match yabai's 10-point side padding without extra outer content spacing.
+		margin = 10,
 		y_offset = 5,
-		padding_left = 8,
-		padding_right = 8,
+		padding_left = 0,
+		padding_right = 0,
 	},
 	popup = {
 		apple_height = 32,

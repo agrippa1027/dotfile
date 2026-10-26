@@ -79,6 +79,9 @@
     "dock": "left",
   },
   "agent": {
+    "threads_sidebar": {
+      "position": "right"
+    },
     "default_profile": "write",
     "tool_permissions": {
       "tools": {

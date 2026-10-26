@@ -6,11 +6,12 @@ available to apps. Option+Delete also keeps its native word-deletion behavior.
 
 | Shortcut | Action |
 | --- | --- |
-| ⌘ Return | New Ghostty terminal |
+| ⌘ Return | New tiled Ghostty terminal on Space 9; follow it |
 | ⌘ ⌥ Return | Ghostty with the persistent tmux Work session |
 | ⌘ ⇧ Return | Firefox |
 | ⌘ ⇧ F | Finder |
 | ⌘ ⇧ E | Zed |
+| ⌘ ⇧ L | Append a timestamp to today's log and open it in a floating Zed window |
 | ⌘ ⇧ N | Neovim terminal when installed; Zed otherwise |
 | ⌘ ⇧ O | Obsidian |
 | ⌘ ⇧ A | ChatGPT website |
@@ -23,7 +24,7 @@ available to apps. Option+Delete also keeps its native word-deletion behavior.
 | ⌃ ⌥ ⇧ 1…9, 0 | Send the window there without following |
 | ⌥ N / ⌥ P | Next / previous Space, wrapping and skipping native fullscreen |
 | ⌥ Escape | Previously focused Space |
-| ⌥ Tab | Next window on the current Space |
+| ⌥ Tab | Previously focused Space |
 | ⌥ ⇧ Tab | Move the entire current Space to the next monitor and follow it |
 | ⌃ ⌥ Tab / ⌃ ⌥ ⇧ Tab | Next / previous monitor |
 | ⌥ T | Toggle floating |
@@ -57,6 +58,12 @@ Disabling sticky also returns that window to tiling.
 
 Shortcuts are adapted from the [Omarchy manual](https://learn.omacom.io/2/the-omarchy-manual/53/hotkeys).
 The config is `~/.config/skhd/skhdrc`; helper actions are in `wm.sh`.
+The daily log launcher is `log.sh`. It creates `~/Log/YYYY-MM-DD.md` when
+needed, uses the existing date-heading style, and appends `## HH:MM` in local
+time on each press. It reuses the Zed Log workspace, brings it to the current
+desktop, and places the cursor below the timestamp. The Log folder remains
+the project root for browsing other entries. Save edits before pressing the
+shortcut again so Zed can reload the appended timestamp from disk.
 SketchyBar, tiling, and shortcuts are separate services. macOS must grant
 Accessibility access to yabai and skhd; window animations also need Screen
 Recording access for yabai. Secure Keyboard Entry prevents skhd from receiving keys.

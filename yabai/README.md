@@ -1,23 +1,27 @@
 # Hubbamax yabai desktop
 
 The desktop uses yabai for native macOS Spaces, skhd for global shortcuts,
-SketchyBar for the glass status groups, and JankyBorders for mint focus borders.
+and SketchyBar for the glass status groups. JankyBorders has been removed.
 The AeroSpace app was uninstalled; `~/.config/aerospace/aerospace.toml` remains
 unchanged from the start of this migration.
 
 ## Appearance and workspaces
 
 - 10px window gaps and side/bottom padding; 50px reserved for SketchyBar.
-- Mint `#87ffaf` selected Space and active borders, on the existing Hubbamax palette.
+- Mint `#87ffaf` selected Space, on the existing Hubbamax palette.
 - Focused windows: 100% opacity; inactive: 96%, transitioning over 0.15 seconds.
-- Window move/resize animation: 0.18 seconds, ease-out cubic.
+  Firefox and video players (IINA, Stremio, VLC, mpv, QuickTime Player) stay at
+  100% opacity even when unfocused, so video content does not become transparent.
+- Window move/resize animations are disabled to avoid a CoreVideo display-link
+  deadlock observed after sleep/display reconfiguration.
 - Shadows on floating windows; tiled windows have no shadows.
 - Numbered Spaces 1–9 and 0 start on the largest display; Space a starts on the other
   display. Existing labeled Spaces retain their current locations when reloaded.
   Connecting a display reconciles this arrangement automatically; it can also be
   restored with `~/.config/yabai/setup-spaces.sh --arrange`.
 - Firefox/Chrome → 1, Zed → 2, Obsidian → 3, calibre → 4, Bruno → 6,
-  Discord → 7, Ghostty → 9. Finder, settings, messaging, and utility dialogs float.
+  Discord → 7, regular Ghostty terminals → 9 (and follow focus). The scratchpad
+  remains separate. Finder, settings, messaging, and utility dialogs float.
 
 Internal labels use `ws-1` through `ws-9`, `ws-0`, and `ws-a` because yabai rejects
 purely numeric labels. The bar and shortcuts translate these to their short names.
