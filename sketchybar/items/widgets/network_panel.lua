@@ -3,15 +3,22 @@ local colors = require("colors")
 local settings = require("settings")
 local utils = require("lib.utils")
 local controls = require("lib.network_controls")
+local ui = require("lib.panel")
 
 local M = {}
 
 function M.attach(owner, options)
 	local width = settings.popup.network_width
-	local half = width / 2 - 5
+	local half = (width - settings.popup.gap) / 2
 	local graph_points = math.floor(half - 10)
 	local prefix = owner.name .. "."
 	local panel = {}
+	local action_styles = {}
+	local function action(row, options)
+		local state = ui.action(row, options)
+		action_styles[#action_styles + 1] = state
+		return state
+	end
 	local opened, generation = false, 0
 	local previous, previous_time, service, dns
 	local sampling, sample_started, last_ping, ping_revision = false, 0, 0, 0
@@ -25,58 +32,118 @@ function M.attach(owner, options)
 		return sbar.add("item", prefix .. name, {
 			position = "popup." .. owner.name,
 			width = full and width or half,
-			cell_span = full and 2 or 1,
+			cell_span = full and 4 or 2,
 			align = "center",
 			icon = { drawing = false },
 			label = {
 				string = label,
 				color = color or colors.white,
-				font = { size = 12 },
-				max_chars = full and 48 or 23,
+				font = { family = settings.font.text, size = 11 },
+				max_chars = full and 52 or 25,
+				padding_left = 4,
+				padding_right = 4,
 			},
+			background = { height = 26, padding_left = 0, padding_right = 0 },
 		})
 	end
 
-	local down = item("download", "↓  Sampling…", false, colors.accent)
-	local up = item("upload", "↑  Sampling…", false, colors.blue)
+	local function metric(name, caption, color)
+		local row = item(name, "—", false, color)
+		row:set({
+			icon = {
+				drawing = true,
+				string = caption,
+				color = colors.grey,
+				width = 74,
+				align = "left",
+				font = { family = settings.font.text, size = 11 },
+				padding_left = 0,
+				padding_right = 0,
+			},
+			label = { width = half - 84, align = "right", font = { size = 11 }, max_chars = 14 },
+		})
+		return row
+	end
+	local router_ping = metric("router.ping", "Router")
+	local internet_ping = metric("internet.ping", "Internet")
+	local down = metric("download", "Receiving", colors.accent)
+	local up = metric("upload", "Sending", colors.blue)
+	local received = metric("received", "Downloaded")
+	local sent = metric("sent", "Uploaded")
+	local history_toggle = item("history.toggle", "Traffic history  ▾", false, colors.grey)
+	local detail_toggle = item("details", "Connection details  ▾", false, colors.grey)
+	action(history_toggle)
+	action(detail_toggle)
 	local graphs = {}
 	for index, name in ipairs({ "download", "upload" }) do
 		graphs[index] = sbar.add("graph", prefix .. name .. ".history", graph_points, {
 			position = "popup." .. owner.name,
 			width = half,
-			cell_span = 1,
+			cell_span = 2,
+			drawing = false,
 			icon = { drawing = false },
 			label = { drawing = false },
 			graph = { color = index == 1 and colors.accent or colors.blue, line_width = 1.5 },
-			background = { height = 24, color = colors.bg1, corner_radius = 4 },
+			background = {
+				height = 36,
+				color = colors.bg1,
+				corner_radius = settings.popup.corner_radius,
+				padding_left = 0,
+				padding_right = 0,
+			},
 		})
 	end
-	item("history.caption", "Traffic history · 10 MiB/s scale", true, colors.grey)
-	local router_ping = item("router.ping", "Router  —", false)
-	local internet_ping = item("internet.ping", "Internet  —", false)
-	local received = item("received", "Received  —", false, colors.grey)
-	local sent = item("sent", "Sent  —", false, colors.grey)
-	local dns_heading = item("dns.heading", "DNS · Checking…", true, colors.accent)
-	local providers = {}
+	local history_caption = item("history.caption", "LIVE TRAFFIC · 2s samples · 10 MiB/s scale", true, colors.grey)
+	history_caption:set({ drawing = false, label = { font = { size = 10 } } })
+	local showing_history = false
+	history_toggle:subscribe("mouse.clicked", function()
+		showing_history = not showing_history
+		for _, graph in ipairs(graphs) do
+			graph:set({ drawing = showing_history })
+		end
+		history_caption:set({ drawing = showing_history })
+		history_toggle:set({ label = showing_history and "Traffic history  ▴" or "Traffic history  ▾" })
+	end)
+	local detail_items = options.add_details and options.add_details() or options.detail_items
+	local separator = item("dns.separator", "", true)
+	separator:set({
+		label = { drawing = false },
+		background = { height = 1, color = colors.panel.divider, corner_radius = 0 },
+	})
+	local dns_heading = item("dns.heading", "DNS PROVIDER · Checking…", true, colors.grey)
+	ui.section(dns_heading)
+	dns_heading:set({ label = { align = "left", width = width - 8 } })
+	local providers, provider_styles = {}, {}
 	for _, provider in ipairs(controls.providers) do
-		providers[provider.id] = item("dns." .. provider.id, provider.label, false)
+		local choice = item("dns." .. provider.id, provider.label, false)
+		choice:set({
+			width = (width - 3 * settings.popup.gap) / 4,
+			cell_span = 1,
+			label = { font = { size = 10 }, max_chars = 12 },
+		})
+		providers[provider.id] = choice
+		provider_styles[provider.id] = action(choice)
 	end
-	local custom = item("dns.custom", "Custom DNS…", false, colors.blue)
+	local custom = item("dns.custom", "Custom DNS…", false, colors.white)
+	local custom_style = action(custom)
 	local restore_item = item("dns.restore", "Restore previous", false, colors.grey)
-	local status = item("action.status", "DNS applies to this Wi-Fi service", true, colors.grey)
-	local power = item("power", "Wi-Fi power…", false, colors.blue)
-	local detail_toggle = item("details", "Connection details  ▾", false, colors.grey)
-	local speed = item("speedtest", "Run speed test · uses internet data", true, colors.blue)
+	local restore_style = action(restore_item, { enabled = false })
+	local power = item("power", "Wi-Fi power…", false, colors.white)
+	local speed = item("speedtest", "Speed test · uses data", false, colors.white)
+	action(power)
+	action(speed)
 	local test_down = item("speedtest.download", "", false, colors.accent)
 	local test_up = item("speedtest.upload", "", false, colors.blue)
 	test_down:set({ drawing = false })
 	test_up:set({ drawing = false })
+	local status = item("action.status", "DNS applies to this Wi-Fi service", true, colors.grey)
+	status:set({ drawing = false, label = { font = { size = 10 } } })
 
 	local timer = sbar.add("item", prefix .. "telemetry", { drawing = false, updates = true, update_freq = 0 })
-	owner:set({ popup = { columns = 2 } })
+	owner:set({ popup = { columns = 4, height = 1 } })
 
 	local function message(text, failed)
-		status:set({ label = { string = text, color = failed and colors.red or colors.grey } })
+		status:set({ drawing = true, label = { string = text, color = failed and colors.red or colors.grey } })
 	end
 
 	local function load_restore()
@@ -131,18 +198,20 @@ function M.attach(owner, options)
 				label = provider.label
 			end
 		end
-		dns_heading:set({ label = "DNS · " .. label })
+		dns_heading:set({ label = "DNS PROVIDER · " .. label })
 		for _, provider in ipairs(controls.providers) do
 			local selected = dns and dns.provider == provider.id
 			providers[provider.id]:set({
 				label = {
-					string = (selected and "●  " or "○  ") .. provider.label,
+					string = provider.label,
 					color = selected and colors.accent or colors.white,
 				},
-				background = { color = selected and colors.bg2 or colors.transparent },
 			})
+			provider_styles[provider.id]:select(selected)
 		end
-		restore_item:set({ label = { color = restore and colors.blue or colors.grey } })
+		custom_style:select(dns and dns.provider == "custom")
+		restore_style:enable(restore ~= nil)
+		restore_item:set({ label = { color = restore and colors.white or colors.grey } })
 	end
 
 	local function read_dns(callback, action_token)
@@ -305,7 +374,7 @@ function M.attach(owner, options)
 	local showing_details = false
 	detail_toggle:subscribe("mouse.clicked", function()
 		showing_details = not showing_details
-		for _, row in ipairs(options.detail_items) do
+		for _, row in ipairs(detail_items) do
 			row:set({ drawing = showing_details })
 		end
 		detail_toggle:set({ label = showing_details and "Connection details  ▴" or "Connection details  ▾" })
@@ -345,7 +414,7 @@ function M.attach(owner, options)
 		if not request then
 			return
 		end
-		speed:set({ label = "Testing… up to 20 seconds" })
+		speed:set({ label = "Testing… up to 20s" })
 		test_down:set({ drawing = false })
 		test_up:set({ drawing = false })
 		message("Measuring internet capacity · uses data")
@@ -357,7 +426,7 @@ function M.attach(owner, options)
 					return
 				end
 				busy, executing = false, false
-				speed:set({ label = "Run speed test · uses internet data" })
+				speed:set({ label = "Speed test · uses data" })
 				local download = type(result) == "table" and tonumber(result.dl_throughput)
 				local upload = type(result) == "table" and tonumber(result.ul_throughput)
 				if
@@ -383,7 +452,7 @@ function M.attach(owner, options)
 
 	local function ping(target, row, request, revision)
 		if not target then
-			row:set({ label = "Router  —" })
+			row:set({ label = "—" })
 			return
 		end
 		sbar.exec("/sbin/ping -n -c 1 -W 1000 " .. utils.quote(target) .. " 2>/dev/null", function(raw, code)
@@ -391,10 +460,8 @@ function M.attach(owner, options)
 				return
 			end
 			local result = controls.ping(raw, code)
-			local label = row == router_ping and "Router" or "Internet"
 			row:set({
-				label = label
-					.. (result and result.latency and string.format("  %.0f ms", result.latency) or "  No reply"),
+				label = result and result.latency and string.format("%.0f ms", result.latency) or "No reply",
 			})
 		end)
 	end
@@ -418,12 +485,12 @@ function M.attach(owner, options)
 			local sampled_at = os.time()
 			local rate = current and controls.rates(current, previous, sampled_at, previous_time)
 			previous, previous_time = current, sampled_at
-			down:set({ label = rate and ("↓  " .. controls.format_rate(rate.download)) or "↓  Sampling…" })
-			up:set({ label = rate and ("↑  " .. controls.format_rate(rate.upload)) or "↑  Sampling…" })
+			down:set({ label = rate and controls.format_rate(rate.download) or "Sampling…" })
+			up:set({ label = rate and controls.format_rate(rate.upload) or "Sampling…" })
 			received:set({
-				label = current and ("Received  " .. controls.format_bytes(current.rx_bytes)) or "Received  —",
+				label = current and controls.format_bytes(current.rx_bytes) or "—",
 			})
-			sent:set({ label = current and ("Sent  " .. controls.format_bytes(current.tx_bytes)) or "Sent  —" })
+			sent:set({ label = current and controls.format_bytes(current.tx_bytes) or "—" })
 			if rate then
 				graphs[1]:push({ math.min(rate.download / (10 * 1024 * 1024), 1) })
 				graphs[2]:push({ math.min(rate.upload / (10 * 1024 * 1024), 1) })
@@ -441,8 +508,18 @@ function M.attach(owner, options)
 	function panel:open()
 		opened, generation = true, generation + 1
 		previous, previous_time, sampling, last_ping = nil, nil, false, 0
-		down:set({ label = "↓  Sampling…" })
-		up:set({ label = "↑  Sampling…" })
+		for _, state in ipairs(action_styles) do
+			state:reset()
+		end
+		received:set({ label = "—" })
+		sent:set({ label = "—" })
+		down:set({ label = "Sampling…" })
+		up:set({ label = "Sampling…" })
+		router_ping:set({ label = "—" })
+		internet_ping:set({ label = "—" })
+		if not busy then
+			status:set({ drawing = false })
+		end
 		local empty = {}
 		for index = 1, graph_points do
 			empty[index] = 0

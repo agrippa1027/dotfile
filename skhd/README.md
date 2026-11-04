@@ -17,6 +17,9 @@ available to apps. Option+Delete also keeps its native word-deletion behavior.
 | ⌘ ⇧ A | ChatGPT website |
 | ⌥ K | This shortcut reference |
 | ⌃ ⌥ L | Lock the screen |
+| ⌘ ⌃ A / N / B / P | Toggle audio / network / Bluetooth / power panel |
+| ⌘ ⌃ ⌥ D | Toggle calendar panel |
+| ⌘ ⌃ Escape | Close the active panel |
 | ⌥ arrows | Focus a window; cross to the adjacent display at an edge |
 | ⌥ ⇧ arrows | Swap tiled windows |
 | ⌥ 1…9, 0, A | Focus the named Space |
@@ -64,6 +67,12 @@ time on each press. It reuses the Zed Log workspace, brings it to the current
 desktop, and places the cursor below the timestamp. The Log folder remains
 the project root for browsing other entries. Save edits before pressing the
 shortcut again so Zed can reload the appended timestamp from disk.
+Panel shortcuts use Command as Omarchy's Super key and share the same popup
+lifecycle as clicking the bar. Repeating a shortcut closes its panel; opening
+another closes the previous one and stops its telemetry. Plain Escape, Tab,
+and arrow keys remain available to applications; in-panel keyboard navigation
+is not implemented yet.
+
 SketchyBar, tiling, and shortcuts are separate services. macOS must grant
 Accessibility access to yabai and skhd; window animations also need Screen
 Recording access for yabai. Secure Keyboard Entry prevents skhd from receiving keys.

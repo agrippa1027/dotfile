@@ -3,6 +3,7 @@ local colors = require("colors")
 local icons = require("icons")
 local settings = require("settings")
 local popup = require("lib.popup")
+local panel = require("lib.panel")
 local utils = require("lib.utils")
 
 local width = settings.popup.width
@@ -15,22 +16,35 @@ local volume = sbar.add("item", "widgets.volume", {
 		color = colors.grey,
 		font = { family = settings.font.icon, style = settings.font.style_map.Regular, size = 14 },
 	},
-	label = { string = "??%" },
+	label = { string = "??%", font = { family = settings.font.text, size = 12 } },
 	background = { color = colors.transparent },
-	popup = { align = "right", height = settings.popup.height },
+	popup = {
+		align = "right",
+		height = settings.popup.height,
+		blur_radius = 0,
+		background = {
+			color = colors.popup.bg,
+			border_color = colors.accent,
+			border_width = settings.popup.border_width,
+			corner_radius = settings.popup.corner_radius,
+		},
+	},
 })
 
 local heading = sbar.add("item", "widgets.volume.heading", {
 	position = "popup." .. volume.name,
 	width = width,
+	background = { padding_left = 0, padding_right = 0 },
 	icon = { drawing = false },
-	label = { string = "AUDIO", color = colors.accent, font = { family = settings.font.icon, style = "Bold" } },
+	label = { string = "Master volume", color = colors.white },
 	align = "center",
 })
+panel.heading(heading)
 local slider = sbar.add("slider", "widgets.volume.slider", width - 80, {
 	position = "popup." .. volume.name,
 	width = width,
-	icon = { string = icons.volume._100, width = 30 },
+	background = { padding_left = 0, padding_right = 0 },
+	icon = { string = icons.volume._100, width = 30, color = colors.grey },
 	label = { drawing = false },
 	slider = {
 		percentage = 0,
@@ -42,27 +56,46 @@ local slider = sbar.add("slider", "widgets.volume.slider", width - 80, {
 local outputs_heading = sbar.add("item", "widgets.volume.outputs", {
 	position = "popup." .. volume.name,
 	width = width,
+	background = { padding_left = 0, padding_right = 0 },
 	icon = { drawing = false },
-	label = { string = "OUTPUT DEVICES", color = colors.grey, font = { family = settings.font.icon, size = 11 } },
+	label = { string = "OUTPUT DEVICES" },
 })
+panel.section(outputs_heading)
 local output_items = {}
 local output_names = {}
+local output_actions = {}
+local slider_action = panel.action(slider)
 for index = 1, 6 do
 	output_items[index] = sbar.add("item", "widgets.volume.output." .. index, {
 		position = "popup." .. volume.name,
 		width = width,
+		background = { padding_left = 0, padding_right = 0 },
 		drawing = false,
 		icon = { string = "○", width = 24, color = colors.grey },
-		label = { max_chars = 29, font = { family = settings.font.icon, size = 12 } },
+		label = {
+			max_chars = 29,
+			font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 12 },
+		},
 	})
+	output_actions[index] = panel.action(output_items[index], { enabled = false })
 end
 local open_settings = sbar.add("item", "widgets.volume.settings", {
 	position = "popup." .. volume.name,
 	width = width,
+	background = { padding_left = 0, padding_right = 0 },
 	icon = { drawing = false },
 	align = "center",
-	label = { string = "Sound settings  ↗", color = colors.blue, font = { family = settings.font.icon, size = 12 } },
+	label = { string = "Sound settings  ↗", color = colors.blue, font = { family = settings.font.text, size = 12 } },
 })
+
+local settings_action = panel.action(open_settings)
+local function reset_hover()
+	slider_action:reset()
+	settings_action:reset()
+	for _, state in ipairs(output_actions) do
+		state:reset()
+	end
+end
 
 local revision = 0
 
@@ -87,7 +120,7 @@ local function update(env)
 
 	volume:set({ icon = icon, label = string.format("%02d%%", level) })
 	slider:set({ slider = { percentage = level } })
-	heading:set({ label = "AUDIO  ·  " .. level .. "%" })
+	heading:set({ label = "Master volume · " .. level .. "%" })
 end
 
 volume:subscribe("volume_change", update)
@@ -108,8 +141,11 @@ local function read_outputs()
 	local request = output_revision
 	output_names = {}
 	outputs_heading:set({ label = "CHECKING OUTPUTS…" })
-	for _, item in ipairs(output_items) do
+	for index, item in ipairs(output_items) do
 		item:set({ drawing = false })
+		output_actions[index]:select(false)
+		output_actions[index]:enable(false)
+		output_actions[index]:reset()
 	end
 	sbar.exec(audio_source .. " -a -t output 2>/dev/null", function(result, status)
 		if request ~= output_revision or volume:query().popup.drawing ~= "on" then
@@ -149,6 +185,8 @@ local function read_outputs()
 			for index, item in ipairs(output_items) do
 				local name = names[index]
 				output_names[index] = name
+				output_actions[index]:enable(name ~= nil)
+				output_actions[index]:select(name ~= nil and name == current)
 				item:set({
 					drawing = name ~= nil,
 					icon = {
@@ -216,9 +254,11 @@ end)
 local details = popup.bind(volume, {
 	settings_command = settings.commands.sound,
 	on_open = function()
+		reset_hover()
 		read_volume()
 		read_outputs()
 	end,
+	on_close = reset_hover,
 })
 open_settings:subscribe("mouse.clicked", function()
 	details:close()

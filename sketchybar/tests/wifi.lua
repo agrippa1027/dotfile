@@ -139,7 +139,8 @@ local function fixture(overrides)
 	package.loaded.sketchybar = sbar
 	-- Exercise the original link reader independently of optional panel telemetry.
 	package.loaded["items.widgets.network_panel"] = {
-		attach = function()
+		attach = function(_, options)
+			options.add_details()
 			return { open = function() end, close = function() end, status = function() end }
 		end,
 	}
@@ -170,7 +171,8 @@ test("collapsed connected: two commands, cached interface, no popup row updates"
 		env:complete("link,ip")
 	end
 	for _, row in ipairs({ "heading", "connection", "ssid", "ip", "router", "interface" }) do
-		equal(env:row(row).updates, 0, row .. " hidden updates")
+		local initial = (row == "heading" or row == "connection") and 1 or 0
+		equal(env:row(row).updates, initial, row .. " hidden updates")
 	end
 end)
 

@@ -26,9 +26,14 @@ return {
 	},
 	popup = {
 		apple_height = 32,
-		height = 32,
+		height = 30,
 		width = 320,
-		network_width = 400,
+		network_width = 350,
+		padding = 14,
+		gap = 6,
+		corner_radius = 4,
+		border_width = 2,
+		control_height = 26,
 	},
 	commands = {
 		settings = "open -a 'System Settings'",

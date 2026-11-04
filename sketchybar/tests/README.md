@@ -8,6 +8,8 @@ lua sketchybar/tests/wifi.lua
 lua sketchybar/tests/bluetooth.lua
 lua sketchybar/tests/calendar.lua
 lua sketchybar/tests/volume.lua
+lua sketchybar/tests/battery.lua
+lua sketchybar/tests/panel.lua
 lua sketchybar/tests/network_controls.lua
 lua sketchybar/tests/network_panel.lua
 lua sketchybar/tests/popup.lua
@@ -22,13 +24,18 @@ Coverage includes:
 - Preserving workspace icons, focus styling, and click targets.
 - Reading Wi-Fi link/address state while collapsed, with full details on opening.
 - Reading Bluetooth power while collapsed, with device inventory on opening.
-- Calendar month navigation, ISO weeks, leap years, DST boundaries, and today reset.
+- Calendar month navigation, ISO weeks, leap years, DST boundaries, individual
+  day cells, adjacent-month/weekend styling, today highlight, and reset.
 - Audio slider validation, output selection, shell quoting, and stale-result rejection.
 - Native network counter parsing, interface resets, service-name discovery, DNS
   address validation, exact readback verification, and previous-setting restore.
 - Network telemetry start/stop, serialized actions, stale callback rejection,
   custom-DNS cancellation, speed-test results, and persistence failures.
-- Popup lifecycle hooks and transient missing startup queries.
+- Compact four-column DNS layout, optional traffic history, and selected-state
+  restoration after hover.
+- Battery power-source/status/estimate parsing, failures, and stale-result rejection.
+- Shared hover/selected/disabled styling, native-spacing-aware dimensions, named
+  panel events, and single-panel lifecycle hooks with transient missing queries.
 - Fallbacks for missing link/power information and failed queries.
 - Opening popups during an in-flight refresh without losing the detail request.
 - Recovering on a later event after a missing callback, using a 65-second

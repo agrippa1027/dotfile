@@ -23,9 +23,10 @@ records the user's pre-existing tmux session-chooser and Zed ask-profile changes
 The panel work branches from that commit; it has not been merged into `main`.
 
 The engine feature branch contains commit `f298ce5`, which adds native popup
-grids. It builds on `fix/popup-clicked-display`, preserving the custom fix that
-opens a panel on the monitor receiving the click. The fork's `master` was
-fast-forwarded to upstream commit `a18fc94` during this work.
+grids, and `af92dc4`, which adds native popup padding and gaps. It builds on
+`fix/popup-clicked-display`, preserving the custom fix that opens a panel on
+the monitor receiving the click. The fork's `master` was fast-forwarded to
+upstream commit `a18fc94` during this work.
 
 ## Implemented
 
@@ -50,6 +51,34 @@ Traffic samples run every two seconds and latency probes every ten seconds
 while the network panel is open. Closing it stops periodic telemetry. Opening
 or refreshing a panel does not change DNS, toggle Wi-Fi or start a speed test.
 
+## Visual refinement pass
+
+The reference is the current [Omarchy Quickshell source](https://github.com/omacom/omarchy/tree/quattro/shell),
+particularly `Commons/Style.qml`, `Ui/KeyboardPanel.qml` and the network panel,
+not an older Waybar theme. Hubbamax and the existing monospace font remain.
+
+- Shared cards: opaque background, 2px mint frame, 4px corners, native 14px
+  insets and 6px gaps, with 14/12/10px title/body/caption hierarchy.
+- Controls: quiet borders, separate hover/current states, and an active bar-item
+  background. Hovering does not lose the real DNS/output selection.
+- Network: connection header, compact aligned metrics, one four-choice DNS row,
+  and optional traffic-history/details expansions instead of graph-led content.
+- Calendar: native eight-column ISO-week/day grid, individual today highlight,
+  subdued weekends and adjacent-month dates, compact month navigation.
+- Audio/Bluetooth/power: consistent section styling and controls; power now
+  distinguishes source, charging/full/paused state and appropriate estimates.
+- Invocation: `Cmd+Ctrl+A/N/B/P` for audio/network/Bluetooth/power,
+  `Cmd+Ctrl+Option+D` for calendar, `Cmd+Ctrl+Escape` to close. Repeat to toggle.
+  App keys are not captured for in-panel navigation.
+- Engine: `popup.padding` (0–256) and `popup.gap` (0–128), strict integer
+  validation and query support. Defaults remain zero; nonzero spacing enables
+  grid geometry even for one-column panels. Spans include internal gaps.
+
+These refinements are recorded on the existing `feat/omarchy-panels` branches.
+The new signed universal executable is installed. The previous executable is preserved
+at `sketchybar/runtime/sketchybar-before-spacing`; current build and patch
+metadata are in `sketchybar/runtime/SKETCHYBAR_BUILD.json`.
+
 ## Code map
 
 Paths below are relative to the dotfiles repository unless stated otherwise.
@@ -62,7 +91,10 @@ Paths below are relative to the dotfiles repository unless stated otherwise.
 | `sketchybar/items/widgets/wifi.lua` | Wi-Fi status reader and panel integration |
 | `sketchybar/items/widgets/network_panel.lua` | Network UI, telemetry and actions |
 | `sketchybar/lib/network_controls.lua` | Counter parsing, rates, DNS validation and command construction |
-| `sketchybar/lib/popup.lua` | Shared open/close lifecycle |
+| `sketchybar/lib/popup.lua` | Shared open/close lifecycle, named toggles and active-item styling |
+| `sketchybar/lib/panel.lua` | Heading/section hierarchy and hover/selected/disabled control styling |
+| `sketchybar/items/panel_keys.lua` | Hidden receivers for skhd panel shortcuts |
+| `sketchybar/items/widgets/battery.lua` | Power source/status/estimate panel |
 | `sketchybar/settings.lua` | Shared dimensions, fonts and settings shortcuts |
 | `~/dev/SketchyBar/src/popup_grid.h` | Window-independent grid geometry and integer validation |
 | `~/dev/SketchyBar/src/popup.c` | Native popup grid integration |
@@ -104,16 +136,23 @@ the committed feature.
 
 ## Verification completed
 
-- All 131 Lua regression tests pass; commands are in [tests/README.md](tests/README.md).
-- Native grid tests pass normally and under AddressSanitizer/UBSan.
+- All 171 Lua regression tests pass; commands are in [tests/README.md](tests/README.md).
+- Native grid tests pass normally and under AddressSanitizer/UBSan, including
+  8,192 zero-spacing comparisons with the original geometry and focused spacing,
+  hidden/full-span/single-column/parser tests. An actual-engine offline harness
+  checks parsing/query output, layout routing and clicked-display inheritance.
 - Both architecture builds, universal signing, Lua syntax and formatting pass.
-- Static analysis retains nine pre-existing warnings; none were added.
+- The earlier foundation pass retained nine static-analysis warnings. That full
+  static-analysis sweep was not repeated for this refinement.
 - Live checks verified rates, latency, grid layout, expanded details, telemetry
   stopping on close and placement on both monitors.
 - A live DNS action reapplied the already-active Cloudflare configuration and
   verified that all four original addresses remained unchanged.
 - Actual radio toggling and the bandwidth-consuming speed test were not run;
   their action and result handling were verified with mocks.
+- Live visual checks covered the refined network, calendar, audio, Bluetooth
+  and power panels. Switching away from network stops its telemetry. Shortcut
+  invocation uses the shared lifecycle; native padding/gap query values match.
 - The popup close-event path was verified. Synthetic pointer tests did not
   establish native physical hover-exit delivery.
 
@@ -125,8 +164,11 @@ readback/reopen race that could temporarily block later actions.
 - Wi-Fi scanning/joining and Bluetooth pairing still open macOS settings.
   Direct discovery, credential entry and pairing are future integration work.
 - macOS can redact the connected Wi-Fi name.
-- Per-app audio mixing, richer display/power panels, keyboard navigation and
-  Quickshell-style animations are not implemented.
+- Per-app audio mixing, display controls, power-profile switching, in-panel
+  arrow/Tab navigation and Quickshell-style animations are not implemented.
+- Pointer-exit dismissal remains. Outside-click dismissal and plain Escape
+  capture require additional integration; `Cmd+Ctrl+Escape` closes panels without
+  taking ordinary application keys.
 - Selecting a DNS provider changes the Wi-Fi service's standard DNS settings;
   it does not enable encrypted DNS. VPN/managed profiles may override them.
 - Traffic totals are interface counters since their last reset. Graphs use a

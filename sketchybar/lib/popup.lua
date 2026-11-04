@@ -1,7 +1,23 @@
 local sbar = require("sketchybar")
+local colors = require("colors")
 
 local M = {}
 local active
+local panels = {}
+
+function M.toggle(name)
+	if panels[name] then
+		panels[name]:toggle()
+		return true
+	end
+	return false
+end
+
+function M.close_all()
+	if active then
+		active:close()
+	end
+end
 
 function M.is_open(owner)
 	local state = owner:query()
@@ -14,7 +30,7 @@ function M.bind(owner, options)
 
 	function popup:close()
 		local was_open = active == self or M.is_open(owner)
-		owner:set({ popup = { drawing = false } })
+		owner:set({ popup = { drawing = false }, background = { color = colors.transparent } })
 		if was_open and options.on_close then
 			options.on_close()
 		end
@@ -24,7 +40,7 @@ function M.bind(owner, options)
 	end
 
 	function popup:toggle()
-		if M.is_open(owner) then
+		if active == self or M.is_open(owner) then
 			self:close()
 			return
 		end
@@ -32,7 +48,7 @@ function M.bind(owner, options)
 			active:close()
 		end
 		active = self
-		owner:set({ popup = { drawing = true } })
+		owner:set({ popup = { drawing = true }, background = { color = colors.panel.selected } })
 		if options.on_open then
 			options.on_open()
 		end
@@ -40,6 +56,7 @@ function M.bind(owner, options)
 
 	owner:subscribe("mouse.clicked", function(env)
 		if env.BUTTON == "right" and options.settings_command then
+			popup:close()
 			sbar.exec(options.settings_command)
 		else
 			popup:toggle()
@@ -49,6 +66,7 @@ function M.bind(owner, options)
 		popup:close()
 	end)
 
+	panels[owner.name] = popup
 	return popup
 end
 

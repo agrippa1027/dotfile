@@ -38,9 +38,11 @@ sbar.default({
 		border_color = colors.bg2,
 	},
 	popup = {
+		padding = settings.popup.padding,
+		gap = settings.popup.gap,
 		background = {
-			border_width = 1,
-			corner_radius = 10,
+			border_width = settings.popup.border_width,
+			corner_radius = settings.popup.corner_radius,
 			border_color = colors.popup.border,
 			color = colors.popup.bg,
 			shadow = { drawing = false },

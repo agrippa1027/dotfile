@@ -29,7 +29,16 @@ local function fixture()
 	local sbar = {}
 	function sbar.add(kind, name, third, fourth)
 		local properties = fourth or third
-		local item = { name = name, properties = properties, handlers = {}, kind = kind, size = fourth and third }
+		local initial_background = {}
+		merge(initial_background, properties.background or {})
+		local item = {
+			name = name,
+			properties = properties,
+			handlers = {},
+			kind = kind,
+			size = fourth and third,
+			initial_background = initial_background,
+		}
 		function item:set(values)
 			merge(self.properties, values)
 		end
@@ -73,6 +82,7 @@ local function fixture()
 	end
 	package.loaded.sketchybar = sbar
 	package.loaded["lib.popup"] = nil
+	package.loaded["lib.panel"] = nil
 	package.loaded["items.widgets.volume"] = nil
 	require("items.widgets.volume")
 	return env
@@ -96,10 +106,127 @@ test("left click opens a synced slider and places the active output first", func
 	equal(env:item("output.2").properties.label.string, "Headphones")
 end)
 
+test("audio hierarchy, slider and opaque card share panel geometry", function()
+	local env = fixture()
+	env:open()
+	local card = env:item().properties.popup
+	equal(card.background.color, colors.popup.bg)
+	equal(card.background.border_color, colors.accent)
+	equal(card.background.border_width, 2)
+	equal(card.background.corner_radius, 4)
+	local heading = env:item("heading").properties
+	equal(heading.label.string, "Master volume · 37%")
+	equal(heading.label.font.family, settings.font.text)
+	equal(heading.label.font.size, 14)
+	equal(heading.background.height, 42)
+	local section = env:item("outputs").properties
+	equal(section.label.font.size, 10)
+	equal(section.label.color, colors.grey)
+	equal(section.background.height, 28)
+	for _, suffix in ipairs({ "slider", "output.1", "settings" }) do
+		local props = env:item(suffix).properties
+		equal(props.background.height, settings.popup.control_height)
+		equal(props.background.corner_radius, 4)
+		equal(props.background.border_width, 1)
+	end
+	equal(env:item("output.1").properties.label.font.family, settings.font.text)
+	equal(env:item("output.1").properties.label.font.size, 12)
+end)
+
+test("every audio popup child keeps exact content width with explicit zero background padding", function()
+	local env = fixture()
+	local function check_layout()
+		local children = 0
+		for _, item in pairs(env.items) do
+			local props = item.properties
+			if props.position == "popup.widgets.volume" then
+				children = children + 1
+				equal(props.width, settings.popup.width)
+				equal(item.initial_background.padding_left, 0)
+				equal(item.initial_background.padding_right, 0)
+				equal(props.background.padding_left, 0)
+				equal(props.background.padding_right, 0)
+			end
+		end
+		equal(children, 10)
+	end
+	check_layout()
+	env:open()
+	for _, suffix in ipairs({ "slider", "output.1", "output.2", "settings" }) do
+		env:fire(suffix, "mouse.entered")
+	end
+	check_layout()
+	env:fire(nil, "mouse.exited.global")
+	check_layout()
+end)
+
+test("selected outputs restore their subtle tint after hover without recoloring text", function()
+	local env = fixture()
+	env:open()
+	local selected = env:item("output.1").properties
+	local other = env:item("output.2").properties
+	equal(selected.background.color, colors.panel.selected)
+	equal(other.background.color, colors.panel.control)
+	for _, suffix in ipairs({ "output.1", "output.2", "slider", "settings" }) do
+		env:fire(suffix, "mouse.entered")
+		equal(env:item(suffix).properties.background.color, colors.panel.hover)
+		equal(env:item(suffix).properties.background.border_color, colors.panel.hover_border)
+		env:fire(suffix, "mouse.exited")
+	end
+	equal(selected.background.color, colors.panel.selected)
+	equal(selected.background.border_color, colors.panel.control_border)
+	equal(selected.icon.color, colors.accent)
+	equal(selected.label.color, colors.white)
+	equal(other.background.color, colors.panel.control)
+	equal(other.label.color, colors.grey)
+end)
+
+test("dismissal resets hover and a refresh disables and clears hidden output selections", function()
+	local env = fixture()
+	env:open()
+	for _, suffix in ipairs({ "output.1", "slider", "settings" }) do
+		env:fire(suffix, "mouse.entered")
+	end
+	env:fire(nil, "mouse.exited.global")
+	equal(env:item("output.1").properties.background.color, colors.panel.selected)
+	equal(env:item("slider").properties.background.color, colors.panel.control)
+	equal(env:item("settings").properties.background.color, colors.panel.control)
+	env:fire(nil, "mouse.clicked")
+	local output = env:item("output.1").properties
+	equal(output.drawing, false)
+	equal(output.background.color, colors.transparent)
+	equal(output.background.border_width, 0)
+	env:fire("output.1", "mouse.entered")
+	equal(output.background.color, colors.transparent)
+	equal(output.drawing, false)
+	env:fire("output.1", "mouse.exited")
+	env:take(" -a -t output")("Headphones\nSpeakers\n", 0)
+	env:take(" -c -t output")("Headphones", 0)
+	equal(output.drawing, true)
+	equal(output.label.string, "Headphones")
+	equal(output.background.color, colors.panel.selected)
+	equal(env:item("output.2").properties.background.color, colors.panel.control)
+end)
+
+test("an unknown current output does not select empty slots", function()
+	local env = fixture()
+	env:fire(nil, "mouse.clicked")
+	env:take(" -a -t output")("Speakers\n", 0)
+	env:take(" -c -t output")("", 1)
+	equal(env:item("output.1").properties.background.color, colors.panel.control)
+	for index = 2, 6 do
+		local props = env:item("output." .. index).properties
+		equal(props.drawing, false)
+		equal(props.background.color, colors.transparent)
+		equal(props.background.border_width, 0)
+	end
+end)
+
 test("volume events sync the bar and slider; invalid values are ignored", function()
 	local env = fixture()
 	env:fire(nil, "volume_change", { INFO = "45.6" })
 	equal(env:item().properties.label.string, "46%")
+	equal(env:item("heading").properties.label.string, "Master volume · 46%")
 	for _, value in ipairs({ "garbage", -1, 101, math.huge, 0 / 0 }) do
 		env:fire(nil, "volume_change", { INFO = value })
 	end

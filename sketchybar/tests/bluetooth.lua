@@ -3,10 +3,32 @@
 local root = (arg[0]:match("^(.*)/") or ".") .. "/.."
 local power_command = "/usr/bin/defaults read /Library/Preferences/com.apple.Bluetooth ControllerPowerState 2>/dev/null"
 local inventory_command = "/usr/sbin/system_profiler SPBluetoothDataType -json -detailLevel mini 2>/dev/null"
-local colors = { white = "white", grey = "grey", cyan = "cyan", blue = "blue", transparent = "transparent" }
+local colors = {
+	white = "white",
+	grey = "grey",
+	accent = "accent",
+	blue = "blue",
+	transparent = "transparent",
+	popup = { bg = "opaque" },
+	panel = {
+		control = "control",
+		control_border = "control_border",
+		hover = "hover",
+		hover_border = "hover_border",
+		selected = "selected",
+	},
+}
 local settings = {
-	popup = { width = 280, height = 30 },
-	font = { style_map = { Bold = "Bold" } },
+	popup = {
+		width = 320,
+		height = 30,
+		padding = 14,
+		gap = 6,
+		control_height = 26,
+		corner_radius = 4,
+		border_width = 2,
+	},
+	font = { text = "Mono", style_map = { Bold = "Bold", Regular = "Regular" } },
 	commands = { bluetooth = "open bluetooth-settings" },
 }
 
@@ -34,7 +56,10 @@ local function new_widget()
 	local mock = { now = 1000, items = {}, commands = {} }
 	local sbar = {}
 	function sbar.add(_, name, properties)
-		local item = { name = name, properties = properties, subscriptions = {} }
+		local initial_background = {}
+		merge(initial_background, properties.background or {})
+		local item =
+			{ name = name, properties = properties, subscriptions = {}, initial_background = initial_background }
 		function item:set(values)
 			merge(self.properties, values)
 		end
@@ -65,6 +90,7 @@ local function new_widget()
 		end,
 	}, { __index = _G })
 	modules["lib.popup"] = assert(loadfile(root .. "/lib/popup.lua", "t", env))()
+	modules["lib.panel"] = assert(loadfile(root .. "/lib/panel.lua", "t", env))()
 	mock.widget = assert(loadfile(root .. "/items/widgets/bluetooth.lua", "t", env))()
 
 	function mock:fire(event, values)
@@ -119,6 +145,110 @@ local function test(name, run)
 	print("ok - " .. name)
 end
 
+test("Bluetooth uses matching title, section, mono body and opaque card geometry", function()
+	local mock = new_widget()
+	local heading = mock.items["widgets.bluetooth.heading"].properties
+	equal(heading.background.height, 42)
+	equal(heading.label.font.family, settings.font.text)
+	equal(heading.label.font.size, 14)
+	local section = mock.items["widgets.bluetooth.devices"].properties
+	equal(section.background.height, 28)
+	equal(section.label.font.size, 10)
+	equal(section.label.color, colors.grey)
+	equal(mock:device(1).label.font.family, settings.font.text)
+	equal(mock:device(1).label.font.size, 12)
+	local card = mock.widget.properties.popup
+	equal(card.background.color, colors.popup.bg)
+	equal(card.background.border_color, colors.accent)
+	equal(card.background.border_width, 2)
+	equal(card.background.corner_radius, 4)
+	-- Device rows only report connections; they must not imply a new action.
+	equal(mock.items["widgets.bluetooth.device.1"].subscriptions["mouse.clicked"], nil)
+	equal(mock.items["widgets.bluetooth.device.1"].subscriptions["mouse.entered"], nil)
+	mock:expect_commands({ power_command })
+end)
+
+test("all Bluetooth popup children including info and empty states have exact unpadded widths", function()
+	local mock = new_widget()
+	local function check_layout()
+		local children = 0
+		for _, item in pairs(mock.items) do
+			local props = item.properties
+			if props.position == "popup.widgets.bluetooth" then
+				children = children + 1
+				equal(props.width, settings.popup.width)
+				equal(item.initial_background.padding_left, 0)
+				equal(item.initial_background.padding_right, 0)
+				equal(props.background.padding_left, 0)
+				equal(props.background.padding_right, 0)
+			end
+		end
+		equal(children, 9)
+	end
+	check_layout()
+	mock:reply(1, "1", 0)
+	mock:fire("mouse.clicked")
+	mock:reply(2, report(true, { "Keyboard" }), 0)
+	mock.items["widgets.bluetooth.settings"].subscriptions["mouse.entered"]()
+	check_layout()
+	mock:fire("routine")
+	mock:reply(3, report(false), 0)
+	check_layout()
+	mock:fire("mouse.exited.global")
+	check_layout()
+end)
+
+test("settings hover uses shared geometry and resets on exit and dismissal", function()
+	local mock = new_widget()
+	mock:reply(1, "1", 0)
+	mock:fire("mouse.clicked")
+	mock:reply(2, report(true, { "Keyboard" }), 0)
+	local item = mock.items["widgets.bluetooth.settings"]
+	equal(item.properties.background.height, settings.popup.control_height)
+	equal(item.properties.background.corner_radius, 4)
+	equal(item.properties.background.border_width, 1)
+	item.subscriptions["mouse.entered"]()
+	equal(item.properties.background.color, colors.panel.hover)
+	equal(item.properties.background.border_color, colors.panel.hover_border)
+	equal(item.properties.label.color, colors.blue)
+	item.subscriptions["mouse.exited"]()
+	equal(item.properties.background.color, colors.panel.control)
+	equal(item.properties.background.border_color, colors.panel.control_border)
+	item.subscriptions["mouse.entered"]()
+	mock:fire("mouse.exited.global")
+	equal(item.properties.background.color, colors.panel.control)
+	mock:fire("mouse.clicked")
+	equal(item.properties.background.color, colors.panel.control)
+	mock:expect_commands({ power_command, inventory_command, inventory_command })
+end)
+
+test("connection status is accented and no-device, off and unavailable states stay clear", function()
+	local mock = new_widget()
+	mock:reply(1, "1", 0)
+	mock:fire("mouse.clicked")
+	mock:reply(2, report(true, { "Keyboard" }), 0)
+	local status = mock.items["widgets.bluetooth.status"].properties
+	local empty = mock.items["widgets.bluetooth.empty"].properties
+	equal(status.label.color, colors.accent)
+	equal(empty.drawing, false)
+	mock:fire("routine")
+	mock:reply(3, report(true), 0)
+	equal(status.label.color, colors.grey)
+	equal(empty.drawing, true)
+	equal(empty.label.string, "Connect a device in settings")
+	mock:expect_empty()
+	mock:fire("routine")
+	mock:reply(4, report(false), 0)
+	equal(empty.label.string, "Bluetooth is turned off")
+	equal(empty.drawing, true)
+	mock:fire("routine")
+	mock:reply(5, nil, 1)
+	equal(status.label.string, "Unavailable")
+	equal(status.label.color, colors.grey)
+	equal(empty.label.string, "Device status unavailable")
+	mock:expect_empty()
+end)
+
 test("collapsed startup, 60-second polling, forced refresh and wake use defaults", function()
 	local mock = new_widget()
 	equal(mock.widget.properties.update_freq, 60)
@@ -152,6 +282,7 @@ test("visible popup inventories, sorts and caps devices, and stays synced when o
 	equal(mock.widget:query().popup.drawing, "on")
 	mock:reply(2, report(true, { "Zulu", "Echo", "Bravo", "Alpha", "Delta" }), 0)
 	equal(mock:status(), "5 connected")
+	equal(mock.items["widgets.bluetooth.devices"].properties.label.string, "CONNECTED DEVICES · MORE IN SETTINGS")
 	for index, name in ipairs({ "Alpha", "Bravo", "Delta", "Echo" }) do
 		equal(mock:device(index).drawing, true)
 		equal(mock:device(index).label.string, name)
@@ -160,6 +291,7 @@ test("visible popup inventories, sorts and caps devices, and stays synced when o
 	mock:reply(3, report(false, { "Stale device" }), 0)
 	equal(mock:status(), "Radio off")
 	equal(mock.widget.properties.icon.color, colors.grey)
+	equal(mock.items["widgets.bluetooth.devices"].properties.label.string, "CONNECTED DEVICES")
 	mock:expect_empty()
 	mock:fire("system_woke")
 	mock:reply(4, report(true), 0)

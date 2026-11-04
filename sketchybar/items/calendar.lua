@@ -3,14 +3,15 @@ local settings = require("settings")
 local colors = require("colors")
 local calendar = require("lib.calendar")
 local popup = require("lib.popup")
+local panel = require("lib.panel")
 
 local cal = sbar.add("item", "calendar", {
 	icon = {
-		color = colors.red,
+		color = colors.grey,
 		padding_left = 8,
 		font = {
 			family = settings.font.text,
-			style = settings.font.style_map["Black"],
+			style = settings.font.style_map.Regular,
 			size = 12.0,
 		},
 	},
@@ -19,7 +20,7 @@ local cal = sbar.add("item", "calendar", {
 		padding_right = 8,
 		width = 49,
 		align = "right",
-		font = { family = settings.font.text },
+		font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 12 },
 	},
 
 	position = "center",
@@ -30,52 +31,75 @@ local cal = sbar.add("item", "calendar", {
 	background = {
 		color = colors.transparent,
 	},
-	popup = { align = "center", height = 26 },
-})
-
-local width = settings.popup.width
-local function row(name, label, options)
-	options = options or {}
-	options.position = "popup." .. cal.name
-	options.width = width
-	options.align = "center"
-	options.icon = options.icon or { drawing = false }
-	options.label = options.label or { string = label, color = colors.white, align = "center", width = width - 20 }
-	return sbar.add("item", "calendar." .. name, options)
-end
-
-local heading = row("heading", "", {
-	label = { font = { style = settings.font.style_map.Bold }, align = "center", width = width - 20 },
-})
-local previous =
-	row("previous", "‹  Previous month", { label = { string = "‹  Previous month", color = colors.grey } })
-row("weekdays", "", {
-	icon = { string = "Wk", color = colors.grey, width = 24, font = { family = settings.font.icon, size = 12 } },
-	label = {
-		string = " Mo  Tu  We  Th  Fr  Sa  Su ",
-		font = { family = settings.font.icon, size = 13 },
-		width = width - 54,
-		align = "left",
-		padding_left = 18,
-		color = colors.grey,
+	popup = {
+		align = "center",
+		height = settings.popup.height,
+		columns = 8,
+		blur_radius = 0,
+		background = {
+			color = colors.popup.bg,
+			border_color = colors.accent,
+			border_width = settings.popup.border_width,
+			corner_radius = settings.popup.corner_radius,
+		},
 	},
 })
-local weeks = {}
-for index = 1, 6 do
-	weeks[index] = row("week." .. index, "", {
-		icon = { width = 24, color = colors.grey, font = { family = settings.font.icon, size = 12 } },
+
+local gap = settings.popup.gap or 0
+local cell_width = math.floor((settings.popup.width - 7 * gap) / 8)
+local width = cell_width * 8 + 7 * gap
+local actions = {}
+local function row(name, label, span, color)
+	span = span or 8
+	local row_width = span == 8 and width or cell_width * span + (span - 1) * gap
+	return sbar.add("item", "calendar." .. name, {
+		position = "popup." .. cal.name,
+		width = row_width,
+		cell_span = span,
+		padding_left = 0,
+		padding_right = 0,
+		align = "center",
+		icon = { drawing = false },
 		label = {
-			font = { family = settings.font.icon, size = 13 },
-			width = width - 54,
-			align = "left",
-			padding_left = 18,
+			string = label,
+			color = color or colors.white,
+			align = "center",
+			width = row_width,
+			padding_left = 0,
+			padding_right = 0,
+			font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 12 },
 		},
+		background = { height = settings.popup.height, color = colors.transparent, padding_left = 0, padding_right = 0 },
 	})
 end
-local next_month = row("next", "Next month  ›", { label = { string = "Next month  ›", color = colors.grey } })
-local today_row = row("today", "Today", { label = { string = "Today", color = colors.accent } })
-local open_calendar =
-	row("open", "Open Calendar  ↗", { label = { string = "Open Calendar  ↗", color = colors.blue } })
+local function action(item)
+	actions[#actions + 1] = panel.action(item)
+	return item
+end
+local function reset_hover()
+	for _, state in ipairs(actions) do
+		state:reset()
+	end
+end
+
+local previous = action(row("previous", "‹", 1, colors.grey))
+local heading = row("heading", "", 6)
+panel.heading(heading)
+local next_month = action(row("next", "›", 1, colors.grey))
+for index, label in ipairs({ "Wk", "Mo", "Tu", "We", "Th", "Fr", "Sa", "Su" }) do
+	panel.section(row("weekdays." .. index, label, 1))
+end
+local weeks = {}
+for index = 1, 6 do
+	local week = { number = row("week." .. index, "", 1, colors.grey), days = {} }
+	panel.section(week.number)
+	for weekday = 1, 7 do
+		week.days[weekday] = row("day." .. index .. "." .. weekday, "", 1)
+	end
+	weeks[index] = week
+end
+local today_row = action(row("today", "Today", 8, colors.accent))
+local open_calendar = action(row("open", "Open Calendar  ↗", 8, colors.blue))
 
 local viewed = os.date("*t")
 local function render()
@@ -83,18 +107,33 @@ local function render()
 	viewed.year, viewed.month = month.year, month.month
 	heading:set({ label = month.title })
 	for index, week in ipairs(month.weeks) do
-		local cells, contains_today, contains_days = {}, false, false
+		local contains_days = false
 		for _, day in ipairs(week.days) do
-			local current = day.in_month and day.today
-			cells[#cells + 1] = day.in_month and string.format(current and "[%02d]" or " %02d ", day.day) or "    "
-			contains_today = contains_today or current
 			contains_days = contains_days or day.in_month
 		end
-		weeks[index]:set({
-			drawing = contains_days,
-			icon = week.number,
-			label = { string = table.concat(cells), color = contains_today and colors.accent or colors.white },
-		})
+		weeks[index].number:set({ drawing = contains_days, label = week.number })
+		for weekday, day in ipairs(week.days) do
+			local current = day.in_month and day.today
+			weeks[index].days[weekday]:set({
+				drawing = contains_days,
+				label = {
+					string = string.format("%02d", day.day),
+					color = current and colors.accent
+						or not day.in_month and colors.panel.control_border
+						or weekday >= 6 and colors.grey
+						or colors.white,
+				},
+				background = {
+					height = settings.popup.control_height,
+					corner_radius = settings.popup.corner_radius,
+					padding_left = 0,
+					padding_right = 0,
+					color = current and colors.panel.selected or colors.transparent,
+					border_width = current and 1 or 0,
+					border_color = colors.accent,
+				},
+			})
+		end
 	end
 	today_row:set({ label = os.date("Today · %a, %d %b") })
 end
@@ -116,7 +155,14 @@ cal:subscribe({ "forced", "routine", "system_woke" }, function()
 	end
 end)
 
-local details = popup.bind(cal, { settings_command = "open -a 'Calendar'", on_open = reset })
+local details = popup.bind(cal, {
+	settings_command = "open -a 'Calendar'",
+	on_open = function()
+		reset_hover()
+		reset()
+	end,
+	on_close = reset_hover,
+})
 previous:subscribe("mouse.clicked", function()
 	step(-1)
 end)

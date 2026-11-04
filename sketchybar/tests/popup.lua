@@ -7,7 +7,10 @@ local function fixture()
 		end,
 	}
 	local popup = assert(loadfile(root .. "/lib/popup.lua", "t", {
-		require = function()
+		require = function(name)
+			if name == "colors" then
+				return { transparent = 0, panel = { selected = 1 } }
+			end
 			return sbar
 		end,
 		type = type,
@@ -19,6 +22,7 @@ local function fixture()
 		end
 		function item:set(values)
 			self.opened = values.popup.drawing
+			self.background = values.background
 		end
 		function item:subscribe(events, callback)
 			self.handlers[events] = callback
@@ -99,5 +103,27 @@ test("right click settings does not start popup telemetry", function()
 	})
 	item.handlers["mouse.clicked"]({ BUTTON = "right" })
 	assert(commands[1] == "open settings" and opened == 0 and not item.opened)
+end)
+test("named shortcuts use the same single-panel lifecycle and active styling", function()
+	local popup, owner = fixture()
+	local a, b = owner("one"), owner("two")
+	popup.bind(a)
+	popup.bind(b)
+	assert(not popup.toggle("unknown"))
+	assert(popup.toggle("one") and a.opened and a.background.color == 1)
+	popup.toggle("two")
+	assert(not a.opened and a.background.color == 0 and b.opened)
+	popup.close_all()
+	assert(not b.opened and b.background.color == 0)
+	popup.close_all()
+end)
+test("repeating a shortcut closes even during a missing native query", function()
+	local popup, owner = fixture()
+	local item = owner("one")
+	popup.bind(item)
+	popup.toggle("one")
+	item.missing = true
+	popup.toggle("one")
+	assert(not item.opened)
 end)
 print("PASS: " .. count .. " popup lifecycle tests")

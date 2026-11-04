@@ -6,6 +6,7 @@ local settings = require("settings")
 local network = require("lib.network")
 local popup = require("lib.popup")
 local utils = require("lib.utils")
+local ui = require("lib.panel")
 local interface, cached_status, panel
 
 local wifi = sbar.add("item", "widgets.wifi", {
@@ -21,41 +22,49 @@ local popup_width = settings.popup.network_width
 local heading = sbar.add("item", "widgets.wifi.heading", {
 	position = "popup." .. wifi.name,
 	width = popup_width,
-	cell_span = 2,
-	align = "center",
-	icon = { string = icons.wifi.connected, color = colors.accent },
+	cell_span = 4,
+	align = "left",
+	background = { padding_left = 0, padding_right = 0 },
+	icon = {
+		string = icons.wifi.connected,
+		color = colors.accent,
+		font = { size = 24 },
+		padding_left = 0,
+		padding_right = 14,
+	},
 	label = { string = "Wi-Fi", max_chars = 28, font = { style = settings.font.style_map.Bold, size = 14 } },
 })
 
+ui.heading(heading)
+
 local rows = {}
-for _, entry in ipairs({
-	{ "connection", "Connection:" },
-	{ "ssid", "Network:" },
-	{ "ip", "IP address:" },
-	{ "router", "Router:" },
-	{ "interface", "Interface:" },
-}) do
-	rows[entry[1]] = sbar.add("item", "widgets.wifi." .. entry[1], {
+local function detail_row(name, caption, visible)
+	rows[name] = sbar.add("item", "widgets.wifi." .. name, {
 		position = "popup." .. wifi.name,
 		width = popup_width,
-		cell_span = 2,
-		drawing = entry[1] == "connection",
+		cell_span = 4,
+		drawing = visible or false,
+		background = { height = 26, padding_left = 0, padding_right = 0 },
 		icon = {
-			string = entry[2],
+			string = caption,
 			color = colors.grey,
 			font = { family = settings.font.text, size = 12 },
-			width = 100,
+			width = 106,
 			align = "left",
+			padding_left = 0,
 		},
 		label = {
 			string = "Checking…",
 			max_chars = 24,
-			width = popup_width - 120,
+			width = popup_width - 136,
 			align = "right",
 			font = { size = 12 },
 		},
 	})
+	return rows[name]
 end
+detail_row("connection", "STATUS", true)
+rows.connection:set({ icon = { font = { size = 10 } }, label = { font = { size = 10 } } })
 
 local labels = {
 	connected = "Connected",
@@ -80,7 +89,13 @@ local function render(status, show_details)
 	if panel then
 		panel:status(status)
 	end
-	heading:set({ label = status.ssid or "Wi-Fi" })
+	heading:set({
+		label = status.ssid or "Wi-Fi",
+		icon = {
+			string = connected and icons.wifi.connected or icons.wifi.disconnected,
+			color = connected and colors.accent or colors.grey,
+		},
+	})
 	rows.connection:set({
 		label = {
 			string = labels[status.state],
@@ -189,26 +204,40 @@ panel = require("items.widgets.network_panel").attach(wifi, {
 		return cached_status
 	end,
 	refresh = refresh,
-	detail_items = { rows.ssid, rows.ip, rows.router, rows.interface },
+	add_details = function()
+		return {
+			detail_row("ssid", "Network"),
+			detail_row("ip", "IP address"),
+			detail_row("router", "Gateway"),
+			detail_row("interface", "Interface"),
+		}
+	end,
 })
 local refresh_item = sbar.add("item", "widgets.wifi.refresh", {
 	position = "popup." .. wifi.name,
-	width = popup_width / 2 - 5,
-	cell_span = 1,
+	width = (popup_width - settings.popup.gap) / 2,
+	cell_span = 2,
 	align = "center",
 	icon = { drawing = false },
-	label = { string = "Refresh connection", color = colors.accent, font = { size = 12 } },
+	background = { padding_left = 5, padding_right = 5 },
+	label = { string = "Refresh", color = colors.white, font = { size = 11 } },
 })
 local open_settings = sbar.add("item", "widgets.wifi.settings", {
 	position = "popup." .. wifi.name,
-	width = popup_width / 2 - 5,
-	cell_span = 1,
+	width = (popup_width - settings.popup.gap) / 2,
+	cell_span = 2,
 	align = "center",
 	icon = { drawing = false },
-	label = { string = "Choose network  →", color = colors.blue, font = { size = 12 } },
+	background = { padding_left = 5, padding_right = 5 },
+	label = { string = "Choose network  →", color = colors.white, font = { size = 11 } },
 })
+local refresh_style = ui.action(refresh_item)
+local settings_style = ui.action(open_settings)
 local details = popup.bind(wifi, {
+	settings_command = settings.commands.wifi,
 	on_open = function()
+		refresh_style:reset()
+		settings_style:reset()
 		refresh()
 		panel:open()
 	end,

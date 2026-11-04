@@ -14,6 +14,14 @@ cmd + shift - a : /usr/bin/open 'https://chatgpt.com'
 # alt - k : /usr/bin/open -a TextEdit "$HOME/.config/skhd/README.md"
 ctrl + alt - l : /opt/homebrew/bin/skhd -k 'cmd + ctrl - q'
 
+# Omarchy panels: Command maps to Super; repeat the shortcut to close.
+cmd + ctrl - a : "$HOME/.local/bin/sketchybar" --trigger omarchy_panel_toggle PANEL=audio
+cmd + ctrl - n : "$HOME/.local/bin/sketchybar" --trigger omarchy_panel_toggle PANEL=network
+cmd + ctrl - b : "$HOME/.local/bin/sketchybar" --trigger omarchy_panel_toggle PANEL=bluetooth
+cmd + ctrl - p : "$HOME/.local/bin/sketchybar" --trigger omarchy_panel_toggle PANEL=power
+cmd + ctrl + alt - d : "$HOME/.local/bin/sketchybar" --trigger omarchy_panel_toggle PANEL=calendar
+cmd + ctrl - escape : "$HOME/.local/bin/sketchybar" --trigger omarchy_panel_close
+
 # Directional focus and swaps
 alt - h : "$HOME/.config/skhd/wm.sh" focus west
 alt - j : "$HOME/.config/skhd/wm.sh" focus south

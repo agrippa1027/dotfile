@@ -3,6 +3,7 @@ local colors = require("colors")
 local icons = require("icons")
 local settings = require("settings")
 local popup = require("lib.popup")
+local panel = require("lib.panel")
 
 local width = settings.popup.width
 local bluetooth = sbar.add("item", "widgets.bluetooth", {
@@ -11,42 +12,99 @@ local bluetooth = sbar.add("item", "widgets.bluetooth", {
 	icon = { string = icons.bluetooth, color = colors.grey },
 	label = { drawing = false },
 	background = { color = colors.transparent },
-	popup = { align = "right", height = settings.popup.height },
+	popup = {
+		align = "right",
+		height = settings.popup.height,
+		blur_radius = 0,
+		background = {
+			color = colors.popup.bg,
+			border_color = colors.accent,
+			border_width = settings.popup.border_width,
+			corner_radius = settings.popup.corner_radius,
+		},
+	},
 })
 
 local heading = sbar.add("item", "widgets.bluetooth.heading", {
 	position = "popup." .. bluetooth.name,
 	width = width,
+	background = { padding_left = 0, padding_right = 0 },
 	align = "center",
-	icon = { string = icons.bluetooth, color = colors.cyan },
-	label = { string = "Bluetooth", font = { style = settings.font.style_map.Bold, size = 14 } },
+	icon = { string = icons.bluetooth, color = colors.accent },
+	label = { string = "Bluetooth", color = colors.white },
 })
+
+panel.heading(heading)
 
 local status_item = sbar.add("item", "widgets.bluetooth.status", {
 	position = "popup." .. bluetooth.name,
 	width = width,
-	icon = { string = "Status:", color = colors.grey, width = 100, align = "left", font = { size = 12 } },
-	label = { string = "Checking…", width = width - 120, align = "right", font = { size = 12 } },
+	background = { padding_left = 0, padding_right = 0 },
+	icon = {
+		string = "STATUS",
+		color = colors.grey,
+		width = 82,
+		align = "left",
+		font = { family = settings.font.text, size = 10 },
+	},
+	label = {
+		string = "Checking…",
+		color = colors.grey,
+		width = width - 102,
+		align = "right",
+		font = { family = settings.font.text, size = 12 },
+	},
 })
+
+local devices_heading = sbar.add("item", "widgets.bluetooth.devices", {
+	position = "popup." .. bluetooth.name,
+	width = width,
+	background = { padding_left = 0, padding_right = 0 },
+	icon = { drawing = false },
+	label = { string = "CONNECTED DEVICES" },
+})
+panel.section(devices_heading)
 
 local device_items = {}
 for index = 1, 4 do
 	device_items[index] = sbar.add("item", "widgets.bluetooth.device." .. index, {
 		position = "popup." .. bluetooth.name,
 		width = width,
+		background = { padding_left = 0, padding_right = 0 },
 		drawing = false,
-		icon = { string = "•", color = colors.cyan, width = 24, align = "center" },
-		label = { width = width - 44, align = "left", max_chars = 30, font = { size = 12 } },
+		icon = { string = "•", color = colors.accent, width = 24, align = "center" },
+		label = {
+			color = colors.white,
+			width = width - 44,
+			align = "left",
+			max_chars = 30,
+			font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 12 },
+		},
 	})
 end
+
+local empty_state = sbar.add("item", "widgets.bluetooth.empty", {
+	position = "popup." .. bluetooth.name,
+	width = width,
+	background = { padding_left = 0, padding_right = 0 },
+	icon = { drawing = false },
+	label = {
+		string = "Checking connected devices…",
+		color = colors.grey,
+		font = { family = settings.font.text, size = 12 },
+	},
+})
 
 local open_settings = sbar.add("item", "widgets.bluetooth.settings", {
 	position = "popup." .. bluetooth.name,
 	width = width,
+	background = { padding_left = 0, padding_right = 0 },
 	align = "center",
 	icon = { drawing = false },
-	label = { string = "Manage devices  →", color = colors.blue, font = { size = 12 } },
+	label = { string = "Manage devices  →", color = colors.blue, font = { family = settings.font.text, size = 12 } },
 })
+
+local settings_action = panel.action(open_settings)
 
 local power_command = "/usr/bin/defaults read /Library/Preferences/com.apple.Bluetooth ControllerPowerState 2>/dev/null"
 local inventory_command = "/usr/sbin/system_profiler SPBluetoothDataType -json -detailLevel mini 2>/dev/null"
@@ -61,9 +119,21 @@ local function render(powered, names)
 	end
 	names = names or {}
 	status_item:set({
-		label = powered == nil and "Unavailable"
-			or (not powered and "Radio off")
-			or (#names == 0 and "No devices connected" or string.format("%d connected", #names)),
+		label = {
+			string = powered == nil and "Unavailable"
+				or (not powered and "Radio off")
+				or (#names == 0 and "No devices connected" or string.format("%d connected", #names)),
+			color = powered and #names > 0 and colors.accent or colors.grey,
+		},
+	})
+	devices_heading:set({
+		label = #names > #device_items and "CONNECTED DEVICES · MORE IN SETTINGS" or "CONNECTED DEVICES",
+	})
+	empty_state:set({
+		drawing = #names == 0,
+		label = powered == nil and "Device status unavailable"
+			or (not powered and "Bluetooth is turned off")
+			or "Connect a device in settings",
 	})
 
 	for index, item in ipairs(device_items) do
@@ -85,8 +155,9 @@ local function render_report(report, status)
 		end
 	end
 	local names = {}
-	if powered and type(data.device_connected) == "table" then
-		for _, device in ipairs(data.device_connected) do
+	local connected = type(data) == "table" and data.device_connected
+	if powered and type(connected) == "table" then
+		for _, device in ipairs(connected) do
 			if type(device) == "table" then
 				for name in pairs(device) do
 					if type(name) == "string" then
@@ -153,7 +224,16 @@ local function refresh()
 end
 
 bluetooth:subscribe({ "routine", "forced", "system_woke" }, refresh)
-local details = popup.bind(bluetooth, { settings_command = settings.commands.bluetooth, on_open = refresh })
+local details = popup.bind(bluetooth, {
+	settings_command = settings.commands.bluetooth,
+	on_open = function()
+		settings_action:reset()
+		refresh()
+	end,
+	on_close = function()
+		settings_action:reset()
+	end,
+})
 open_settings:subscribe("mouse.clicked", function()
 	details:close()
 	sbar.exec(settings.commands.bluetooth)

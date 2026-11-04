@@ -12,5 +12,13 @@ return {
 	bg2 = 0xff303030,
 	transparent = 0x00000000,
 	bar = { glass = 0x991c1c1c, glass_border = 0x88303030 },
-	popup = { bg = 0xff1c1c1c, border = 0xff303030 },
+	popup = { bg = 0xff1c1c1c, border = 0xff87ffaf },
+	panel = {
+		control = 0xff222222,
+		control_border = 0xff404040,
+		hover = 0xff303030,
+		hover_border = 0xff606060,
+		selected = 0xff393f3b,
+		divider = 0xff303030,
+	},
 }

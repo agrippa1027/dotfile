@@ -1,20 +1,44 @@
 # Desktop panels
 
 Omarchy-inspired panels using the existing SketchyBar Lua runtime and Hubbamax palette.
+The current [Omarchy shell](https://github.com/omacom/omarchy/tree/quattro/shell)
+is the reference: opaque dark cards, mint 2px frames, compact 4px corners,
+monospace title/body/caption hierarchy, and subtle hover/selected controls.
+Panels have native 14px insets and 6px row/column gaps.
 No additional packages are required; audio output selection uses the installed
 `SwitchAudioSource` utility.
 
 | Bar item | Left click | Other controls |
 | --- | --- | --- |
-| Date / clock | Month calendar with ISO weeks and today marked in brackets | Previous / next month, scroll on the clock, Today reset; right click opens Calendar |
-| Wi-Fi | Live traffic graphs, transfer totals, latency, DNS controls and connection details | Provider/custom DNS and previous-setting restore; Wi-Fi power; opt-in internet speed test; Choose network opens Wi-Fi Settings |
+| Date / clock | Month calendar with ISO weeks and an individually highlighted today | Previous / next month, scroll on the clock, Today reset; right click opens Calendar |
+| Wi-Fi | Compact live rates, transfer totals, latency and four-column DNS picker | Expandable traffic history and connection details; provider/custom DNS and previous-setting restore; Wi-Fi power; opt-in speed test; Choose network opens Wi-Fi Settings |
 | Bluetooth | Radio state and connected devices | Manage devices or right click opens Bluetooth Settings |
 | Audio | Volume slider and up to six output devices | Click an output to switch; scroll on bar adjusts volume, Ctrl-scroll uses smaller steps; right click opens Sound Settings |
-| Battery | Time remaining | Right click opens Battery Settings |
+| Battery | Power source, charging status and time remaining / time to full | Settings button or right click opens Battery Settings |
 
 Opening a panel closes the previous one. Moving the pointer away from the bar
 and popup dismisses it. The clock resets to the current month whenever reopened.
 Panels attach directly to the bar so there is no hover gap while entering them.
+The active bar item stays highlighted. Hovering a control preserves its actual
+selected state when the pointer leaves.
+
+### Keyboard shortcuts
+
+Command substitutes for Omarchy's Super key:
+
+| Shortcut | Panel |
+| --- | --- |
+| `⌘ Ctrl A` | Audio |
+| `⌘ Ctrl N` | Network |
+| `⌘ Ctrl B` | Bluetooth |
+| `⌘ Ctrl P` | Power |
+| `⌘ Ctrl Option D` | Calendar |
+| `⌘ Ctrl Escape` | Close the active panel |
+
+Repeat a panel shortcut to close it. These are defined in `../skhd/skhdrc`.
+Plain Escape, arrows and Tab are not intercepted; in-panel keyboard navigation
+and outside-click dismissal are not implemented. Pointer-exit dismissal is
+retained from the existing configuration.
 
 The running binary is built from the personal
 [SketchyBar fork](https://github.com/agrippa1027/SketchyBar), branch
@@ -22,7 +46,13 @@ The running binary is built from the personal
 `~/.local/bin/sketchybar` points to that checkout's `bin/sketchybar`. Keep its
 clicked-display patch: it places panels on the monitor receiving the click.
 This branch also adds `popup.columns` and child `cell_span` for native grid
-layouts. The expanded network panel requires that build.
+layouts. Engine commit `af92dc4` adds `popup.padding` (0–256)
+and `popup.gap` (0–128), defaulting to zero for legacy configurations; spacing
+also works in single-column panels. These panels require that newer build.
+
+The rebuilt universal binary is installed and the launch agent restarted.
+The previous executable is preserved in ignored `runtime/sketchybar-before-spacing`;
+current build/patch metadata is in `runtime/SKETCHYBAR_BUILD.json`.
 
 Traffic is sampled every two seconds while the network panel is open and stops
 when it closes. Counters cover the Wi-Fi interface since its last reset; rates

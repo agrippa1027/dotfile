@@ -144,6 +144,7 @@ local function fixture(options)
 		settings = settings,
 		["lib.utils"] = utils,
 		["lib.network_controls"] = controls,
+		["lib.panel"] = require("lib.panel"),
 	}
 	local isolated = setmetatable({
 		require = function(name)
@@ -207,7 +208,7 @@ end
 test("opening starts telemetry; closing stops reads without changing settings", function()
 	local env = fixture()
 	equal(#env.calls, 0)
-	equal(env.owner.properties.popup.columns, 2)
+	equal(env.owner.properties.popup.columns, 4)
 	equal(env:item("telemetry").properties.update_freq, 0)
 	env:open()
 	equal(env:item("telemetry").properties.update_freq, 2)
@@ -267,7 +268,8 @@ test("known DNS providers render their actual name and selected choice", functio
 	env:open()
 	contains(env:label("dns.heading"), "Cloudflare")
 	equal(env:item("dns.cloudflare").properties.label.color, colors.accent)
-	contains(env:label("dns.cloudflare"), "●")
+	equal(env:label("dns.cloudflare"), "Cloudflare")
+	equal(env:item("dns.cloudflare").properties.background.color, colors.panel.selected)
 end)
 
 test("DNS changes reread service state, serialize clicks, and verify the new provider", function()
@@ -474,6 +476,48 @@ test("connection details expand and collapse as a group", function()
 	equal(env.detail.properties.drawing, true)
 	env:click("details")
 	equal(env.detail.properties.drawing, false)
+end)
+
+test("compact view uses a four-choice DNS row and keeps charts optional", function()
+	local env = fixture()
+	for _, provider in ipairs(controls.providers) do
+		equal(env:item("dns." .. provider.id).properties.cell_span, 1)
+	end
+	equal(env:item("download").properties.cell_span, 2)
+	equal(env:item("download.history").properties.drawing, false)
+	equal(env:item("history.caption").properties.drawing, false)
+	equal(env:item("action.status").properties.drawing, false)
+	env:click("history.toggle")
+	equal(env:item("download.history").properties.drawing, true)
+	equal(env:item("upload.history").properties.drawing, true)
+	equal(env:item("history.caption").properties.drawing, true)
+	env:click("history.toggle")
+	equal(env:item("download.history").properties.drawing, false)
+end)
+
+test("hovering DNS restores its persistent selected state on exit", function()
+	local env = fixture()
+	env:open()
+	local selected = env:item("dns.cloudflare")
+	selected.handlers["mouse.entered"]({})
+	equal(selected.properties.background.color, colors.panel.hover)
+	selected.handlers["mouse.exited"]({})
+	equal(selected.properties.background.color, colors.panel.selected)
+	local inactive = env:item("dns.google")
+	inactive.handlers["mouse.entered"]({})
+	inactive.handlers["mouse.exited"]({})
+	equal(inactive.properties.background.color, colors.panel.control)
+end)
+
+test("opening clears stale latency and keeps inactive action messages hidden", function()
+	local env = fixture()
+	env:open()
+	env:reply("/sbin/ping", "64 bytes: time=7.1 ms", 0)
+	env.panel:close()
+	env.panel:open()
+	equal(env:label("router.ping"), "—")
+	equal(env:label("internet.ping"), "—")
+	equal(env:item("action.status").properties.drawing, false)
 end)
 
 if #failures > 0 then
