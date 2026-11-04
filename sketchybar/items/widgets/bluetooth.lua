@@ -133,7 +133,7 @@ local function refresh()
 		end)
 	end
 
-	if bluetooth:query().popup.drawing == "on" then
+	if popup.is_open(bluetooth) then
 		inventory()
 	else
 		started_at = os.time()
