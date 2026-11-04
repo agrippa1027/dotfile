@@ -82,7 +82,7 @@
     "threads_sidebar": {
       "position": "right"
     },
-    "default_profile": "write",
+    "default_profile": "ask",
     "tool_permissions": {
       "tools": {
         "search_web": {
