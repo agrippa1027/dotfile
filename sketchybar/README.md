@@ -51,3 +51,5 @@ Bluetooth pairing use System Settings in this first pass. Per-app audio mixing,
 Quickshell animations, and keyboard navigation are not implemented.
 
 Regression commands and coverage are in [tests/README.md](tests/README.md).
+The project scope, implementation map, engine build and remaining work are in
+[OMARCHY-PANELS.md](OMARCHY-PANELS.md).
