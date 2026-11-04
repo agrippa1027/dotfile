@@ -8,6 +8,9 @@ lua sketchybar/tests/wifi.lua
 lua sketchybar/tests/bluetooth.lua
 lua sketchybar/tests/calendar.lua
 lua sketchybar/tests/volume.lua
+lua sketchybar/tests/network_controls.lua
+lua sketchybar/tests/network_panel.lua
+lua sketchybar/tests/popup.lua
 ```
 
 Each test file can also be invoked by absolute path. SketchyBar execution, events,
@@ -21,6 +24,11 @@ Coverage includes:
 - Reading Bluetooth power while collapsed, with device inventory on opening.
 - Calendar month navigation, ISO weeks, leap years, DST boundaries, and today reset.
 - Audio slider validation, output selection, shell quoting, and stale-result rejection.
+- Native network counter parsing, interface resets, service-name discovery, DNS
+  address validation, exact readback verification, and previous-setting restore.
+- Network telemetry start/stop, serialized actions, stale callback rejection,
+  custom-DNS cancellation, speed-test results, and persistence failures.
+- Popup lifecycle hooks and transient missing startup queries.
 - Fallbacks for missing link/power information and failed queries.
 - Opening popups during an in-flight refresh without losing the detail request.
 - Recovering on a later event after a missing callback, using a 65-second
