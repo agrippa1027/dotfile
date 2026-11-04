@@ -28,6 +28,7 @@ return {
 		apple_height = 32,
 		height = 32,
 		width = 320,
+		network_width = 400,
 	},
 	commands = {
 		settings = "open -a 'System Settings'",

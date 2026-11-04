@@ -6,6 +6,7 @@ local settings = require("settings")
 local network = require("lib.network")
 local popup = require("lib.popup")
 local utils = require("lib.utils")
+local interface, cached_status, panel
 
 local wifi = sbar.add("item", "widgets.wifi", {
 	position = "right",
@@ -16,10 +17,11 @@ local wifi = sbar.add("item", "widgets.wifi", {
 	popup = { align = "right", height = settings.popup.height },
 })
 
-local popup_width = settings.popup.width
+local popup_width = settings.popup.network_width
 local heading = sbar.add("item", "widgets.wifi.heading", {
 	position = "popup." .. wifi.name,
 	width = popup_width,
+	cell_span = 2,
 	align = "center",
 	icon = { string = icons.wifi.connected, color = colors.accent },
 	label = { string = "Wi-Fi", max_chars = 28, font = { style = settings.font.style_map.Bold, size = 14 } },
@@ -36,6 +38,8 @@ for _, entry in ipairs({
 	rows[entry[1]] = sbar.add("item", "widgets.wifi." .. entry[1], {
 		position = "popup." .. wifi.name,
 		width = popup_width,
+		cell_span = 2,
+		drawing = entry[1] == "connection",
 		icon = {
 			string = entry[2],
 			color = colors.grey,
@@ -53,22 +57,6 @@ for _, entry in ipairs({
 	})
 end
 
-local refresh_item = sbar.add("item", "widgets.wifi.refresh", {
-	position = "popup." .. wifi.name,
-	width = popup_width,
-	align = "center",
-	icon = { drawing = false },
-	label = { string = "Refresh connection", color = colors.accent, font = { size = 12 } },
-})
-
-local open_settings = sbar.add("item", "widgets.wifi.settings", {
-	position = "popup." .. wifi.name,
-	width = popup_width,
-	align = "center",
-	icon = { drawing = false },
-	label = { string = "Choose network  →", color = colors.blue, font = { size = 12 } },
-})
-
 local labels = {
 	connected = "Connected",
 	connecting = "Connecting…",
@@ -78,6 +66,7 @@ local labels = {
 }
 
 local function render(status, show_details)
+	cached_status = status
 	local connected = status.state == "connected"
 	wifi:set({
 		icon = {
@@ -87,6 +76,9 @@ local function render(status, show_details)
 	})
 	if not show_details then
 		return
+	end
+	if panel then
+		panel:status(status)
 	end
 	heading:set({ label = status.ssid or "Wi-Fi" })
 	rows.connection:set({
@@ -101,7 +93,6 @@ local function render(status, show_details)
 	rows.interface:set({ label = status.interface or "—" })
 end
 
-local interface
 local started_at
 local generation = 0
 local pending = false
@@ -116,7 +107,7 @@ local function refresh()
 	local request = generation
 	started_at = now
 	pending = false
-	local show_details = wifi:query().popup.drawing == "on"
+	local show_details = popup.is_open(wifi)
 
 	local function exec(command, callback)
 		started_at = os.time()
@@ -128,7 +119,7 @@ local function refresh()
 	end
 
 	local function finish(data)
-		render(network.parse(data), show_details and wifi:query().popup.drawing == "on")
+		render(network.parse(data), show_details and popup.is_open(wifi))
 		started_at = nil
 		if pending then
 			refresh()
@@ -190,7 +181,41 @@ local function refresh()
 end
 
 wifi:subscribe({ "routine", "forced", "system_woke", "wifi_change" }, refresh)
-local details = popup.bind(wifi, { on_open = refresh })
+panel = require("items.widgets.network_panel").attach(wifi, {
+	get_interface = function()
+		return interface
+	end,
+	get_status = function()
+		return cached_status
+	end,
+	refresh = refresh,
+	detail_items = { rows.ssid, rows.ip, rows.router, rows.interface },
+})
+local refresh_item = sbar.add("item", "widgets.wifi.refresh", {
+	position = "popup." .. wifi.name,
+	width = popup_width / 2 - 5,
+	cell_span = 1,
+	align = "center",
+	icon = { drawing = false },
+	label = { string = "Refresh connection", color = colors.accent, font = { size = 12 } },
+})
+local open_settings = sbar.add("item", "widgets.wifi.settings", {
+	position = "popup." .. wifi.name,
+	width = popup_width / 2 - 5,
+	cell_span = 1,
+	align = "center",
+	icon = { drawing = false },
+	label = { string = "Choose network  →", color = colors.blue, font = { size = 12 } },
+})
+local details = popup.bind(wifi, {
+	on_open = function()
+		refresh()
+		panel:open()
+	end,
+	on_close = function()
+		panel:close()
+	end,
+})
 refresh_item:subscribe("mouse.clicked", refresh)
 open_settings:subscribe("mouse.clicked", function()
 	details:close()

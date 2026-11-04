@@ -137,6 +137,12 @@ local function fixture(overrides)
 		return env.now
 	end
 	package.loaded.sketchybar = sbar
+	-- Exercise the original link reader independently of optional panel telemetry.
+	package.loaded["items.widgets.network_panel"] = {
+		attach = function()
+			return { open = function() end, close = function() end, status = function() end }
+		end,
+	}
 	package.loaded["lib.popup"] = nil
 	package.loaded["items.widgets.wifi"] = nil
 	require("items.widgets.wifi")
