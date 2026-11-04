@@ -1,14 +1,16 @@
 # Hubbamax yabai desktop
 
 The desktop uses yabai for native macOS Spaces, skhd for global shortcuts,
-and SketchyBar for the glass status groups. JankyBorders has been removed.
+and SketchyBar for the edge-to-edge Omarchy-style status bar. JankyBorders has been removed.
 The AeroSpace app was uninstalled; `~/.config/aerospace/aerospace.toml` remains
 unchanged from the start of this migration.
 
 ## Appearance and workspaces
 
-- 10px window gaps and side/bottom padding; 50px reserved for SketchyBar.
-- Mint `#87ffaf` selected Space, on the existing Hubbamax palette.
+- 10px window gaps and padding on every side; 26px reserved for SketchyBar
+  plus 10px of top padding between the bar and app windows.
+- Tinted translucent Hubbamax bar, compact numbered Spaces, a square for each display's
+  visible tiled Space (triangle for floating), and dimmed empty Spaces.
 - Focused windows: 100% opacity; inactive: 96%, transitioning over 0.15 seconds.
   Firefox and video players (IINA, Stremio, VLC, mpv, QuickTime Player) stay at
   100% opacity even when unfocused, so video content does not become transparent.

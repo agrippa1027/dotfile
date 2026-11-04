@@ -2,7 +2,7 @@ local sbar = require("sketchybar")
 local colors = require("colors")
 local settings = require("settings")
 local utils = require("lib.utils")
-local app_icons = require("vendor.app-font.icon_map")
+
 local workspace_order = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "a" }
 local workspaces = {}
 local space_indices = {}
@@ -15,20 +15,19 @@ for _, id in ipairs(workspace_order) do
 		position = "left",
 
 		drawing = false,
+		width = settings.workspaces.width,
 		icon = {
 			string = workspace,
-			font = { family = "Comic Code Ligatures", style = "Regular", size = 13 },
-			padding_left = 6,
-			padding_right = 5,
+			font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 12 },
+			width = settings.workspaces.width,
+			align = "center",
+			padding_left = 0,
+			padding_right = 0,
 		},
-		label = {
-			font = { family = "sketchybar-app-font", style = "Regular", size = 15 },
-			padding_left = 3,
-			padding_right = 6,
-		},
-		background = { color = colors.transparent, corner_radius = 7 },
-		padding_left = 2,
-		padding_right = 2,
+		label = { drawing = false },
+		background = { drawing = false, color = colors.transparent, corner_radius = 0, border_width = 0 },
+		padding_left = 0,
+		padding_right = settings.workspaces.gap,
 	})
 	item:subscribe("mouse.clicked", function()
 		local index = space_indices[workspace]
@@ -70,10 +69,9 @@ local function refresh()
 			return
 		end
 
-		local focused
+		local active = {}
+		local layouts = {}
 		local displays = {}
-		local display_counts = {}
-		local display_edges = {}
 		local indices = {}
 		local names = {}
 		for key, assignment in pairs(assignments) do
@@ -96,21 +94,11 @@ local function refresh()
 				if workspaces[workspace] then
 					-- Both tools use native display ordering (yabai: display_arrangement_order=default).
 					displays[workspace] = assignment.display
-					display_counts[assignment.display] = (display_counts[assignment.display] or 0) + 1
 					indices[workspace] = assignment.index
 					names[assignment.index] = workspace
-					if assignment["has-focus"] then
-						focused = workspace
-					end
+					active[workspace] = assignment["has-focus"] or assignment["is-visible"]
+					layouts[workspace] = assignment.type
 				end
-			end
-		end
-
-		for _, workspace in ipairs(workspace_order) do
-			local display = displays[workspace]
-			if display then
-				display_edges[display] = display_edges[display] or { first = workspace }
-				display_edges[display].last = workspace
 			end
 		end
 
@@ -123,7 +111,7 @@ local function refresh()
 				finish()
 				return
 			end
-			local apps = {}
+			local occupied = {}
 			for key, window in pairs(windows) do
 				if
 					type(key) ~= "number"
@@ -137,40 +125,21 @@ local function refresh()
 				local workspace = names[window.space]
 				local app = window.app
 				if workspace and app ~= "" then
-					apps[workspace] = apps[workspace] or {}
-					apps[workspace][app] = true
+					occupied[workspace] = true
 				end
 			end
 
 			space_indices = indices
 			for _, workspace in ipairs(workspace_order) do
-				local labels = {}
-				for app in pairs(apps[workspace] or {}) do
-					labels[#labels + 1] = app_icons[app] or ":default:"
-				end
-				table.sort(labels)
-				local active = workspace == focused
-				local display = displays[workspace]
-				local edges = display_edges[display] or {}
-				local edge_padding = (display_counts[display] or 0) < 4 and settings.workspaces.small_group_edge_padding
-					or 2
+				local marker = layouts[workspace] == "float" and "▲" or "■"
 				workspaces[workspace]:set({
 					drawing = displays[workspace] ~= nil,
 					display = displays[workspace] or 0,
-					width = "dynamic",
-					padding_left = edges.first == workspace and edge_padding or 2,
-					padding_right = edges.last == workspace and edge_padding or 2,
 					icon = {
-						color = active and colors.black or (#labels > 0 and colors.white or colors.grey),
-						padding_left = #labels > 0 and 6 or 13,
-						padding_right = #labels > 0 and 5 or 12,
+						string = active[workspace] and marker or workspace,
+						color = (active[workspace] or occupied[workspace]) and colors.white
+							or colors.bar.workspace_empty,
 					},
-					label = {
-						string = table.concat(labels, " "),
-						drawing = #labels > 0,
-						color = active and colors.black or colors.white,
-					},
-					background = { color = active and colors.accent or colors.transparent },
 				})
 			end
 			finish()

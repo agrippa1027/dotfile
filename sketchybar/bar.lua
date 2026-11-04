@@ -10,9 +10,10 @@ sbar.bar({
 	y_offset = settings.bar.y_offset,
 
 	-- Appearance
-	color = colors.transparent,
-	corner_radius = settings.corner_radius,
-	blur_radius = 50,
+	color = colors.bar.bg,
+	corner_radius = 0,
+	border_width = 0,
+	blur_radius = settings.bar.blur_radius,
 	shadow = false,
 
 	-- Content spacing

@@ -1,6 +1,6 @@
 return {
 	paddings = 5,
-	group_paddings = 5,
+
 	font = {
 		icon = "Hack Nerd Font",
 		text = "Comic Code Ligatures",
@@ -14,15 +14,16 @@ return {
 	},
 	corner_radius = 8,
 	workspaces = {
-		small_group_edge_padding = 18,
+		width = 20,
+		gap = 1,
 	},
 	bar = {
-		height = 38,
-		-- Match yabai's 10-point side padding without extra outer content spacing.
-		margin = 10,
-		y_offset = 5,
-		padding_left = 0,
-		padding_right = 0,
+		height = 26,
+		margin = 0,
+		y_offset = 0,
+		blur_radius = 20,
+		padding_left = 8,
+		padding_right = 8,
 	},
 	popup = {
 		apple_height = 32,

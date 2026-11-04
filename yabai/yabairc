@@ -27,9 +27,9 @@ yabai -m config mouse_action1 move
 yabai -m config mouse_action2 resize
 yabai -m config mouse_drop_action swap
 
-# The 50px reservation matches the existing floating SketchyBar.
-yabai -m config external_bar all:50:0
-yabai -m config top_padding 0
+# Reserve the bar height, then leave the same 10px inset as the other window edges.
+yabai -m config external_bar all:26:0
+yabai -m config top_padding 10
 yabai -m config bottom_padding 10
 yabai -m config left_padding 10
 yabai -m config right_padding 10

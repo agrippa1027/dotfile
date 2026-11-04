@@ -3,6 +3,7 @@
 From the `.config` directory:
 
 ```sh
+lua sketchybar/tests/bar.lua
 lua sketchybar/tests/workspaces.lua
 lua sketchybar/tests/wifi.lua
 lua sketchybar/tests/bluetooth.lua
@@ -21,7 +22,10 @@ and time are mocked; the tests do not launch system commands or change hardware.
 Coverage includes:
 
 - Coalescing workspace event bursts and rejecting stale results.
-- Preserving workspace icons, focus styling, and click targets.
+- Edge-to-edge bar geometry, tinted translucent styling and blur, removal of
+  floating groups, opaque popup defaults and a 10px app-to-bar gap in yabai.
+- Fixed-width numbered workspaces, occupied/empty colors, per-display active
+  layout glyphs, stale-result rejection, and preserved click targets.
 - Reading Wi-Fi link/address state while collapsed, with full details on opening.
 - Reading Bluetooth power while collapsed, with device inventory on opening.
 - Calendar month navigation, ISO weeks, leap years, DST boundaries, individual

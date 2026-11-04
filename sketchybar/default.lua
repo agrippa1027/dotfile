@@ -32,7 +32,7 @@ sbar.default({
 	background = {
 		drawing = true,
 		height = 26,
-		corner_radius = settings.corner_radius,
+		corner_radius = 0,
 		color = colors.transparent,
 		border_width = 0,
 		border_color = colors.bg2,

@@ -79,12 +79,31 @@ The new signed universal executable is installed. The previous executable is pre
 at `sketchybar/runtime/sketchybar-before-spacing`; current build and patch
 metadata are in `sketchybar/runtime/SKETCHYBAR_BUILD.json`.
 
+## Edge-to-edge topbar pass
+
+The topbar now follows the current Omarchy shell's
+[`Bar.qml`](https://github.com/omacom/omarchy/blob/quattro/shell/plugins/bar/Bar.qml)
+and [`Workspaces.qml`](https://github.com/omacom/omarchy/blob/quattro/shell/plugins/bar/widgets/Workspaces.qml):
+
+- Continuous dark-tinted Hubbamax background at approximately 70% opacity with
+  20px blur, 26px height, zero outer margin/offset, square corners and no floating
+  group brackets; 8px internal end insets. Popup backgrounds remain opaque.
+- Compact 20px workspace slots with 1px spacing, plain numbers and no app icons
+  or filled active pills. Occupied numbers are bright, empty numbers half-opacity.
+- Each display marks its visible workspace with a square for tiled layouts or a
+  triangle for floating layouts. Existing `0`/`a` labels and focus targets remain.
+- yabai reserves 26px for the bar plus 10px of top padding before app windows,
+  matching the existing 10px window gaps and side/bottom padding.
+- Popup layouts, styling, controls and shortcuts are unchanged.
+
 ## Code map
 
 Paths below are relative to the dotfiles repository unless stated otherwise.
 
 | File | Responsibility |
 | --- | --- |
+| `sketchybar/bar.lua` | Continuous topbar geometry and background |
+| `sketchybar/items/workspaces.lua` | Compact workspace labels, layout/occupancy state and focus targets |
 | `sketchybar/items/calendar.lua` | Clock and calendar popup |
 | `sketchybar/lib/calendar.lua` | Month and ISO-week calculations |
 | `sketchybar/items/widgets/volume.lua` | Audio controls and output picker |
@@ -136,7 +155,8 @@ the committed feature.
 
 ## Verification completed
 
-- All 171 Lua regression tests pass; commands are in [tests/README.md](tests/README.md).
+- Lua regression commands and coverage are in [tests/README.md](tests/README.md),
+  including bar geometry, yabai reservation and compact multi-display workspace states.
 - Native grid tests pass normally and under AddressSanitizer/UBSan, including
   8,192 zero-spacing comparisons with the original geometry and focused spacing,
   hidden/full-span/single-column/parser tests. An actual-engine offline harness

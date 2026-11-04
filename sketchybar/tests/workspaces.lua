@@ -1,7 +1,7 @@
 -- Run with lua path/to/sketchybar/tests/workspaces.lua; no system commands are run.
 local root = (arg[0]:match("^(.*)/") or ".") .. "/.."
-local colors = { black = "black", white = "white", grey = "grey", accent = "accent", transparent = "transparent" }
-local settings = { workspaces = { small_group_edge_padding = 18 } }
+local colors = assert(loadfile(root .. "/colors.lua"))()
+local settings = assert(loadfile(root .. "/settings.lua"))()
 local spaces = {
 	{ index = 1, display = 1, label = "ws-1", ["has-focus"] = true },
 	{ index = 2, display = 1, label = "ws-2" },
@@ -49,7 +49,6 @@ local function fixture()
 		colors = colors,
 		settings = settings,
 		["lib.utils"] = assert(loadfile(root .. "/lib/utils.lua"))(),
-		["vendor.app-font.icon_map"] = { Alpha = ":alpha:", Beta = ":beta:" },
 	}
 	local env = setmetatable({
 		os = {
@@ -91,20 +90,92 @@ local function ready()
 	return mock
 end
 
-test("initial refresh queries spaces then windows and preserves workspace rendering", function()
+test("initial refresh renders active, occupied and empty Omarchy workspace states", function()
 	local mock = ready()
 	equal(#mock.commands, 2)
 	mock:expect(1, "spaces")
 	mock:expect(2, "windows")
 	local first = mock.items["workspace.1"].values
-	equal(first.label.string, ":alpha: :beta:", "sorted, deduplicated apps")
-	equal(first.background.color, colors.accent)
-	equal(first.icon.color, colors.black)
+	equal(first.icon.string, "■")
+	equal(first.icon.color, colors.white)
 	equal(first.display, 1)
-	equal(first.padding_left, 18)
-	equal(mock.items["workspace.2"].values.label.string, ":default:")
-	equal(mock.items["workspace.3"].values.label.drawing, false)
+	equal(mock.items["workspace.2"].values.icon.string, "2")
+	equal(mock.items["workspace.2"].values.icon.color, colors.white)
+	equal(mock.items["workspace.3"].values.icon.color, colors.bar.workspace_empty)
 	equal(mock.items["workspace.4"].values.drawing, false)
+end)
+
+test("workspace slots are fixed-width, backgroundless and omit application icons", function()
+	local mock = ready()
+	for _, name in ipairs({ "workspace.1", "workspace.2", "workspace.3", "workspace.a" }) do
+		local config = mock.items[name].config
+		equal(config.width, 20)
+		equal(config.icon.width, 20)
+		equal(config.icon.align, "center")
+		equal(config.icon.font.family, settings.font.text)
+		equal(config.icon.padding_left, 0)
+		equal(config.icon.padding_right, 0)
+		equal(config.padding_left, 0)
+		equal(config.padding_right, 1)
+		equal(config.label.drawing, false)
+		equal(config.background.drawing, false)
+		equal(config.background.corner_radius, 0)
+		equal(config.background.border_width, 0)
+	end
+end)
+
+test("active workspaces stay bright even when empty", function()
+	local mock = fixture()
+	mock:reply(1, spaces)
+	mock:reply(2, {})
+	equal(mock.items["workspace.1"].values.icon.string, "■")
+	equal(mock.items["workspace.1"].values.icon.color, colors.white)
+	equal(mock.items["workspace.2"].values.icon.color, colors.bar.workspace_empty)
+end)
+
+test("each display marks its visible workspace even without global focus", function()
+	local mock = fixture()
+	mock:reply(1, {
+		{ index = 1, display = 1, label = "ws-1", ["has-focus"] = true },
+		{ index = 3, display = 2, label = "ws-3", ["is-visible"] = true },
+	})
+	mock:reply(2, {})
+	equal(mock.items["workspace.1"].values.icon.string, "■")
+	equal(mock.items["workspace.3"].values.icon.string, "■")
+	equal(mock.items["workspace.3"].values.icon.color, colors.white)
+end)
+
+test("focus changes restore workspace numbers without changing slot widths", function()
+	local mock = ready()
+	mock:fire()
+	mock:reply(3, {
+		{ index = 1, display = 1, label = "ws-1" },
+		{ index = 2, display = 1, label = "ws-2", ["has-focus"] = true },
+	})
+	mock:reply(4, windows)
+	equal(mock.items["workspace.1"].values.icon.string, "1")
+	equal(mock.items["workspace.2"].values.icon.string, "■")
+	equal(mock.items["workspace.1"].config.width, mock.items["workspace.2"].config.width)
+end)
+
+test("floating layouts use the Omarchy triangle marker", function()
+	local mock = fixture()
+	mock:reply(1, { { index = 1, display = 1, label = "ws-1", type = "float", ["has-focus"] = true } })
+	mock:reply(2, {})
+	equal(mock.items["workspace.1"].values.icon.string, "▲")
+end)
+
+test("zero and the existing letter workspace retain their labels and display assignments", function()
+	local mock = fixture()
+	mock:reply(1, {
+		{ index = 10, display = 2, label = "ws-0" },
+		{ index = 11, display = 1, label = "ws-a" },
+	})
+	mock:reply(2, {})
+	equal(mock.items["workspace.0"].values.icon.string, "0")
+	equal(mock.items["workspace.0"].values.display, 2)
+	equal(mock.items["workspace.a"].values.icon.string, "a")
+	equal(mock.items["workspace.a"].values.display, 1)
 end)
 
 test("20 events during the space query coalesce into one follow-up", function()
@@ -146,7 +217,7 @@ test("forced and native window events use the same coalesced reader", function()
 	mock:reply(3, spaces)
 	mock:reply(4, spaces)
 	mock:reply(5, {})
-	equal(mock.items["workspace.1"].values.label.drawing, false)
+	equal(mock.items["workspace.2"].values.icon.color, colors.bar.workspace_empty)
 	for _, event in ipairs({ "space_change", "display_change", "front_app_switched", "system_woke" }) do
 		equal(mock.items.workspace_state.handlers[event], nil, "duplicate native subscription")
 	end
@@ -218,7 +289,7 @@ test("lost window callbacks cannot overwrite a recovered refresh", function()
 	mock:reply(3, spaces)
 	mock:reply(4, windows)
 	mock:reply(2, {})
-	equal(mock.items["workspace.1"].values.label.string, ":alpha: :beta:")
+	equal(mock.items["workspace.2"].values.icon.color, colors.white)
 	equal(mock.items["workspace.1"].updates, 1)
 end)
 

@@ -1,6 +1,19 @@
-# Desktop panels
+# Omarchy-style desktop bar and panels
 
-Omarchy-inspired panels using the existing SketchyBar Lua runtime and Hubbamax palette.
+The bar follows the current [Omarchy shell](https://github.com/omacom/omarchy/tree/quattro/shell/plugins/bar):
+a continuous Hubbamax strip, 26px high, flush to the top and sides with no
+floating groups, outer gaps or rounded bar corners. The dark background is
+approximately 70% opaque with a 20px blur for tinted transparency. Its 8px end
+insets are internal; yabai reserves the 26px bar height plus a 10px gap before
+tiled windows. Popup panels remain opaque.
+
+Workspaces use 20px slots separated by 1px, without app icons or filled pills.
+Occupied numbers use the normal foreground; empty numbers are half-opacity.
+The visible workspace on each display replaces its number with a square (or a
+triangle for a floating layout). Existing workspace names, display assignments
+and click/keyboard focus behavior are preserved, including `0` and `a`.
+
+Omarchy-inspired panels use the existing SketchyBar Lua runtime and Hubbamax palette.
 The current [Omarchy shell](https://github.com/omacom/omarchy/tree/quattro/shell)
 is the reference: opaque dark cards, mint 2px frames, compact 4px corners,
 monospace title/body/caption hierarchy, and subtle hover/selected controls.

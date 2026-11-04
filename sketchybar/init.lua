@@ -14,7 +14,7 @@ require("items.widgets.battery")
 require("items.widgets.volume")
 require("items.widgets.wifi")
 require("items.widgets.bluetooth")
-require("groups")
+
 require("items.panel_keys")
 sbar.end_config()
 sbar.exec("$HOME/.local/bin/sketchybar --update")
