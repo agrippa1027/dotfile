@@ -103,7 +103,7 @@ test("Power card inherits shared styling and preserves the bar geometry", functi
 	local bar = env:item().properties
 	equal(bar.position, "right")
 	equal(bar.update_freq, 180)
-	equal(bar.icon.font.size, 19)
+	equal(bar.icon.font.size, 14)
 	equal(bar.icon.font.style, settings.font.style_map.Regular)
 	equal(bar.popup.height, settings.popup.height)
 	equal(bar.popup.background.color, colors.popup.bg)
@@ -175,7 +175,7 @@ test("charging uses time-to-full caption and preserves the AC bar glyph", functi
 	env:update(report("AC Power", 42, "charging", "1:05 remaining"), 0)
 	equal(env:value(), "42%")
 	equal(env:item().properties.icon.string, icons.battery.charging)
-	equal(env:item().properties.icon.color, colors.green)
+	equal(env:item().properties.icon.color, colors.white)
 	equal(env:value("source"), "AC Power")
 	equal(env:value("status"), "Charging")
 	equal(env:item("remaining").properties.icon.string, "TIME TO FULL")
@@ -237,15 +237,15 @@ test("missing and malformed estimates never invent a duration", function()
 	end
 end)
 
-test("bar thresholds, warning colors and leading-zero percentages are unchanged", function()
+test("bar uses neutral normal charge colors and retains warning thresholds and percentages", function()
 	local env = fixture()
 	for _, case in ipairs({
-		{ 100, icons.battery._100, colors.green },
-		{ 81, icons.battery._100, colors.green },
-		{ 80, icons.battery._75, colors.green },
-		{ 61, icons.battery._75, colors.green },
-		{ 60, icons.battery._50, colors.green },
-		{ 41, icons.battery._50, colors.green },
+		{ 100, icons.battery._100, colors.white },
+		{ 81, icons.battery._100, colors.white },
+		{ 80, icons.battery._75, colors.white },
+		{ 61, icons.battery._75, colors.white },
+		{ 60, icons.battery._50, colors.white },
+		{ 41, icons.battery._50, colors.white },
 		{ 40, icons.battery._25, colors.orange },
 		{ 21, icons.battery._25, colors.orange },
 		{ 20, icons.battery._0, colors.red },
@@ -260,7 +260,7 @@ test("bar thresholds, warning colors and leading-zero percentages are unchanged"
 	env:update(report("AC Power", 5, "charging"), 0)
 	equal(env:value(), "05%")
 	equal(env:item().properties.icon.string, icons.battery.charging)
-	equal(env:item().properties.icon.color, colors.green)
+	equal(env:item().properties.icon.color, colors.white)
 end)
 
 test("missing, failed and invalid results clear stale readouts without throwing", function()

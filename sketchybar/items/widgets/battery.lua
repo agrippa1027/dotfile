@@ -10,7 +10,7 @@ local battery = sbar.add("item", "widgets.battery", {
 	icon = {
 		font = {
 			style = settings.font.style_map["Regular"],
-			size = 19.0,
+			size = 14.0,
 		},
 	},
 	update_freq = 180,
@@ -105,7 +105,7 @@ local function render(info)
 	local icon, label, color = "!", "?", colors.grey
 	if info then
 		local charge = info.charge
-		label, color = string.format("%02d%%", charge), colors.green
+		label, color = string.format("%02d%%", charge), colors.white
 		-- Keep the existing AC glyph, even when the battery is full or charging is paused.
 		if info.source == "AC Power" then
 			icon = icons.battery.charging
