@@ -6,6 +6,8 @@ From the `.config` directory:
 lua sketchybar/tests/workspaces.lua
 lua sketchybar/tests/wifi.lua
 lua sketchybar/tests/bluetooth.lua
+lua sketchybar/tests/calendar.lua
+lua sketchybar/tests/volume.lua
 ```
 
 Each test file can also be invoked by absolute path. SketchyBar execution, events,
@@ -17,6 +19,8 @@ Coverage includes:
 - Preserving workspace icons, focus styling, and click targets.
 - Reading Wi-Fi link/address state while collapsed, with full details on opening.
 - Reading Bluetooth power while collapsed, with device inventory on opening.
+- Calendar month navigation, ISO weeks, leap years, DST boundaries, and today reset.
+- Audio slider validation, output selection, shell quoting, and stale-result rejection.
 - Fallbacks for missing link/power information and failed queries.
 - Opening popups during an in-flight refresh without losing the detail request.
 - Recovering on a later event after a missing callback, using a 65-second
