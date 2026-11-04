@@ -26,8 +26,8 @@ return {
 	},
 	popup = {
 		apple_height = 32,
-		height = 30,
-		width = 280,
+		height = 32,
+		width = 320,
 	},
 	commands = {
 		settings = "open -a 'System Settings'",

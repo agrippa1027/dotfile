@@ -13,7 +13,7 @@ local wifi = sbar.add("item", "widgets.wifi", {
 	icon = { string = icons.wifi.disconnected, color = colors.grey },
 	label = { drawing = false },
 	background = { color = colors.transparent },
-	popup = { align = "center", height = settings.popup.height },
+	popup = { align = "right", height = settings.popup.height },
 })
 
 local popup_width = settings.popup.width
@@ -21,8 +21,8 @@ local heading = sbar.add("item", "widgets.wifi.heading", {
 	position = "popup." .. wifi.name,
 	width = popup_width,
 	align = "center",
-	icon = { string = icons.wifi.router },
-	label = { string = "Wi-Fi", font = { style = settings.font.style_map.Bold } },
+	icon = { string = icons.wifi.connected, color = colors.accent },
+	label = { string = "Wi-Fi", max_chars = 28, font = { style = settings.font.style_map.Bold, size = 14 } },
 })
 
 local rows = {}
@@ -36,17 +36,37 @@ for _, entry in ipairs({
 	rows[entry[1]] = sbar.add("item", "widgets.wifi." .. entry[1], {
 		position = "popup." .. wifi.name,
 		width = popup_width,
-		icon = { string = entry[2], font = { family = settings.font.icon }, width = 100, align = "left" },
-		label = { string = "Checking…", max_chars = 24, width = popup_width - 100, align = "right" },
+		icon = {
+			string = entry[2],
+			color = colors.grey,
+			font = { family = settings.font.text, size = 12 },
+			width = 100,
+			align = "left",
+		},
+		label = {
+			string = "Checking…",
+			max_chars = 24,
+			width = popup_width - 120,
+			align = "right",
+			font = { size = 12 },
+		},
 	})
 end
+
+local refresh_item = sbar.add("item", "widgets.wifi.refresh", {
+	position = "popup." .. wifi.name,
+	width = popup_width,
+	align = "center",
+	icon = { drawing = false },
+	label = { string = "Refresh connection", color = colors.accent, font = { size = 12 } },
+})
 
 local open_settings = sbar.add("item", "widgets.wifi.settings", {
 	position = "popup." .. wifi.name,
 	width = popup_width,
 	align = "center",
 	icon = { drawing = false },
-	label = { string = "Open Wi-Fi Settings", color = colors.blue },
+	label = { string = "Choose network  →", color = colors.blue, font = { size = 12 } },
 })
 
 local labels = {
@@ -69,7 +89,12 @@ local function render(status, show_details)
 		return
 	end
 	heading:set({ label = status.ssid or "Wi-Fi" })
-	rows.connection:set({ label = labels[status.state] })
+	rows.connection:set({
+		label = {
+			string = labels[status.state],
+			color = connected and colors.accent or (status.state == "connecting" and colors.orange or colors.grey),
+		},
+	})
 	rows.ssid:set({ label = status.ssid or (connected and "Hidden by macOS" or "—") })
 	rows.ip:set({ label = status.ip or "—" })
 	rows.router:set({ label = status.router or "—" })
@@ -166,6 +191,7 @@ end
 
 wifi:subscribe({ "routine", "forced", "system_woke", "wifi_change" }, refresh)
 local details = popup.bind(wifi, { on_open = refresh })
+refresh_item:subscribe("mouse.clicked", refresh)
 open_settings:subscribe("mouse.clicked", function()
 	details:close()
 	sbar.exec(settings.commands.wifi)

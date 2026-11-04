@@ -216,6 +216,17 @@ test("powered off popup: power command alone and stale details cleared", functio
 	end
 end)
 
+test("refresh action rereads visible details without changing Wi-Fi", function()
+	local env = ready()
+	env:fire("mouse.clicked")
+	env:complete("power,summary,ip")
+	env.responses.ip = "192.168.1.9\n"
+	env:row("refresh").handlers["mouse.clicked"]({ BUTTON = "left" })
+	env:complete("power,summary,ip")
+	equal(env:row("ip").label, "192.168.1.9")
+	equal(env.items["widgets.wifi"].open, true)
+end)
+
 test("explicit inactive summary: two commands, no fallback or IP", function()
 	local env = ready()
 	env.responses.summary = "LinkStatusActive : FALSE\n  SSID : Stale\n  Router : 192.168.1.1\n"

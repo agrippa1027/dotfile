@@ -11,7 +11,7 @@ local bluetooth = sbar.add("item", "widgets.bluetooth", {
 	icon = { string = icons.bluetooth, color = colors.grey },
 	label = { drawing = false },
 	background = { color = colors.transparent },
-	popup = { align = "center", height = settings.popup.height },
+	popup = { align = "right", height = settings.popup.height },
 })
 
 local heading = sbar.add("item", "widgets.bluetooth.heading", {
@@ -19,14 +19,14 @@ local heading = sbar.add("item", "widgets.bluetooth.heading", {
 	width = width,
 	align = "center",
 	icon = { string = icons.bluetooth, color = colors.cyan },
-	label = { string = "Bluetooth", font = { style = settings.font.style_map.Bold } },
+	label = { string = "Bluetooth", font = { style = settings.font.style_map.Bold, size = 14 } },
 })
 
 local status_item = sbar.add("item", "widgets.bluetooth.status", {
 	position = "popup." .. bluetooth.name,
 	width = width,
-	icon = { string = "Status:", width = 100, align = "left" },
-	label = { string = "Checking…", width = width - 100, align = "right" },
+	icon = { string = "Status:", color = colors.grey, width = 100, align = "left", font = { size = 12 } },
+	label = { string = "Checking…", width = width - 120, align = "right", font = { size = 12 } },
 })
 
 local device_items = {}
@@ -36,7 +36,7 @@ for index = 1, 4 do
 		width = width,
 		drawing = false,
 		icon = { string = "•", color = colors.cyan, width = 24, align = "center" },
-		label = { width = width - 24, align = "left", max_chars = 30 },
+		label = { width = width - 44, align = "left", max_chars = 30, font = { size = 12 } },
 	})
 end
 
@@ -45,7 +45,7 @@ local open_settings = sbar.add("item", "widgets.bluetooth.settings", {
 	width = width,
 	align = "center",
 	icon = { drawing = false },
-	label = { string = "Open Bluetooth Settings", color = colors.blue },
+	label = { string = "Manage devices  →", color = colors.blue, font = { size = 12 } },
 })
 
 local power_command = "/usr/bin/defaults read /Library/Preferences/com.apple.Bluetooth ControllerPowerState 2>/dev/null"
