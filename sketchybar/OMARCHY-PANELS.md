@@ -15,7 +15,7 @@ audio controls and a richer Wi-Fi/network panel.
 
 | Repository | Location | Feature branch |
 | --- | --- | --- |
-| [Dotfiles](https://github.com/afsalahamed07/dotfile) | `~/.config` | `feat/omarchy-panels` |
+| [Dotfiles](https://github.com/agrippa1027/dotfile) | `~/.config` | `feat/omarchy-panels` |
 | [SketchyBar fork](https://github.com/agrippa1027/SketchyBar) | `~/dev/SketchyBar` | `feat/omarchy-panels` |
 
 Dotfiles `main` preserves the earlier configuration work. Commit `b6e0231`
