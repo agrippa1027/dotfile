@@ -8,6 +8,9 @@ export CONFIG_DIR="${CONFIG_DIR:-${XDG_CONFIG_HOME:-$HOME/.config}/sketchybar}"
   exit 1
 }
 
+# Build native helpers before replacing the running Lua event loop.
+make -s -C "$CONFIG_DIR"
+
 # Reload replaces this config's event loop, keeping a single Lua process.
 pid_file="$CONFIG_DIR/runtime/lua.pid"
 if [[ -r "$pid_file" ]]; then

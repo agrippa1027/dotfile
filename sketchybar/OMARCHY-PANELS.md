@@ -193,6 +193,27 @@ output were restored after testing.
 | Bluetooth | Power, device management, nearby scan and battery readouts | In-panel authenticated pairing and keyboard navigation |
 | Power | Source, charging state and estimates | Power-profile switching and display controls |
 
+## Native display helper
+
+The display panel runs `runtime/display-control`, compiled from C, for inventory,
+brightness polling and adjustments. It starts no Python interpreter. Build it
+with `make -C ~/.config/sketchybar`; the launcher also rebuilds it when its source
+changes, before replacing the running Lua process. Building requires Xcode
+Command Line Tools, `pkg-config` and `json-c` (`brew install pkg-config json-c`).
+The binary statically links json-c and needs no Homebrew JSON library at runtime.
+
+The JSON interface is `display-control snapshot`, `display-control levels`, or
+`display-control brightness UUID PERCENT`. Discovery prefers the Homebrew
+BetterDisplay CLI, then falls back to the app executable; `BETTERDISPLAY_BIN`
+can select an explicit executable for testing. Commands have a 1.2-second cap,
+within an eight-second read budget or six-second adjustment budget. Adjustments
+validate the connected display UUID and supported range, write once, and verify
+the resulting level with up to three reads. Polling remains every ten seconds
+only while the panel is open.
+
+Run `make -C sketchybar test` from the repository root for native bridge and
+panel regression tests. Python is used only by the bridge test harness.
+
 ## Code map
 
 Paths below are relative to the dotfiles repository unless stated otherwise.
@@ -205,7 +226,7 @@ Paths below are relative to the dotfiles repository unless stated otherwise.
 | `sketchybar/lib/calendar.lua` | Month and ISO-week calculations |
 | `sketchybar/items/widgets/volume.lua` | Audio controls and output picker |
 | `sketchybar/items/widgets/display.lua` | Display picker, brightness controls and popup lifecycle |
-| `sketchybar/helpers/display_control.py` | Bounded BetterDisplay CLI bridge and exact-UUID readback verification |
+| `sketchybar/helpers/display_control.c` | Native BetterDisplay CLI bridge and exact-UUID readback verification |
 | `sketchybar/items/widgets/wifi.lua` | Wi-Fi status reader and panel integration |
 | `sketchybar/items/widgets/network_panel.lua` | Network UI, telemetry and actions |
 | `sketchybar/lib/network_controls.lua` | Counter parsing, rates, DNS validation and command construction |

@@ -6,7 +6,7 @@ local panel = require("lib.panel")
 local utils = require("lib.utils")
 
 local root = os.getenv("CONFIG_DIR") or (os.getenv("HOME") .. "/.config/sketchybar")
-local command = "/usr/bin/python3 " .. utils.quote(root .. "/helpers/display_control.py")
+local command = utils.quote(root .. "/runtime/display-control")
 local width, gap = settings.popup.width + 40, settings.popup.gap
 local display = sbar.add("item", "widgets.display", {
 	position = "right",

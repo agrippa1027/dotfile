@@ -10,8 +10,7 @@ lua sketchybar/tests/bluetooth.lua
 lua sketchybar/tests/bluetooth_controls.lua
 lua sketchybar/tests/calendar.lua
 lua sketchybar/tests/volume.lua
-lua sketchybar/tests/display.lua
-python3 -m unittest discover -s sketchybar/tests -p 'test_display_control.py'
+make -C sketchybar test
 lua sketchybar/tests/battery.lua
 lua sketchybar/tests/panel.lua
 lua sketchybar/tests/network_controls.lua
@@ -20,8 +19,11 @@ lua sketchybar/tests/popup.lua
 bash sketchybar/tests/native/run.sh
 ```
 
-Each test file can also be invoked by absolute path. SketchyBar execution, events,
-and time are mocked; the tests do not launch system commands or change hardware.
+Each test file can also be invoked by absolute path. The Lua tests mock
+SketchyBar execution, events and time. No tests change hardware.
+The display bridge suite runs the compiled C executable against a fake CLI,
+including real child-process timeouts and the total operation budget. Python is
+used only by this test harness, not by the display panel at runtime.
 The native runner builds the local `~/dev/SketchyBar` and `~/dev/SbarLua` sources
 in a temporary directory with AddressSanitizer/UBSan. It checks allocation-free
 hidden drawing and hit tests, popup surface reuse across 1,000 monitor switches,

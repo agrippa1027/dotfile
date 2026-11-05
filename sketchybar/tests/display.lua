@@ -117,6 +117,8 @@ test("open selects the display under the pointer and reads fractional brightness
 	equal(env:item("mode").properties.label.string, "2560x1440 · 85.05Hz")
 	equal(env:item("timer").properties.update_freq, 10)
 	equal(#env.commands, 1)
+	assert(env.commands[1]:find("/runtime/display-control", 1, true))
+	assert(not env.commands[1]:find("python", 1, true))
 end)
 
 test("display picker changes target without changing hardware", function()

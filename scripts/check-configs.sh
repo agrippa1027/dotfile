@@ -35,6 +35,8 @@ require_file 'Ghostty config' "$config_root/ghostty/config"
 require_file 'SketchyBar config' "$config_root/sketchybar/sketchybarrc"
 require_file 'SketchyBar Lua entry point' "$config_root/sketchybar/init.lua"
 require_file 'SbarLua runtime' "$config_root/sketchybar/runtime/sketchybar.so"
+require_file 'Native display helper' "$config_root/sketchybar/runtime/display-control"
+[[ -x "$config_root/sketchybar/runtime/display-control" ]] || die 'Run make -C ~/.config/sketchybar to build the display helper'
 require_file 'tmux config' "$config_root/tmux/tmux.conf"
 require_file 'Zsh config' "$config_root/.zshrc"
 require_file 'Zsh secrets' "$config_root/zsh/secrets.zsh"
