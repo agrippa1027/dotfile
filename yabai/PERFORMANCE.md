@@ -1,7 +1,9 @@
 # Yabai performance audit — 2026-11-05
 
-The running milestone 1 build is already small and idle-efficient. A focused
-native memory-lifetime fix is prepared in the personal fork; it is not installed.
+The milestone 1 build measured here was already small and idle-efficient. The
+native memory-lifetime fix prepared by this audit was subsequently included in
+the [activated M2 build](M2-NATIVE.md). The measurements below remain the audit's
+original baseline, not an isolated before/after claim for that fix.
 
 ## Measurements from the running build
 
@@ -100,7 +102,7 @@ results and logs are preserved under ignored `yabai/runtime/performance/`.
 The temporary candidate and isolated event-loop benchmark are in
 `/private/tmp/yabai-performance/`.
 
-The running binary remains the verified milestone 1 build. Activating this
-candidate would change its ad-hoc signature and pinned loader hash. Preserve
-and restore native Space labels across the daemon restart, and account for
-macOS Accessibility reauthorization, as established during milestone 1.
+The running binary now includes this fix through the activated M2 build. Its
+new signature and pinned loader hash were verified during activation, along
+with the recovered post-reboot workspace mappings. See [M2's live results and
+activation record](M2-NATIVE.md) for the current state and verification limits.

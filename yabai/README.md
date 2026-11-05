@@ -9,7 +9,9 @@ starting with Option-drag tile rearrangement.
 The [milestone 1 native fix and live check](M1-DRAG.md) record the first concrete
 drag-placement regression and its correction in the personal yabai fork.
 The [performance audit](PERFORMANCE.md) records measured CPU/memory usage and
-the tested Accessibility lifetime fix prepared in that fork.
+the Accessibility lifetime fix now included in the active M2 build.
+The [active M2 resize build](M2-NATIVE.md) runs entirely in yabai's C handlers;
+its one-time activation and measurement tools are separate from everyday input.
 
 ## Appearance and workspaces
 

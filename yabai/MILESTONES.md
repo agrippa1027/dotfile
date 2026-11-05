@@ -7,6 +7,12 @@ Work in small increments, each with one visible outcome. Record the behavior,
 change, verification and rollback before taking the next checkpoint. Evaluate
 the feel with ordinary applications, not just automated tests.
 
+Performance policy: everyday window interactions run in yabai's native C event
+handlers. Avoid interpreter launches, shell processes and additional resident
+helpers for pointer movement, resizing and focus. Keep CPU use and retained
+memory bounded, and measure before claiming an improvement. One-time installers,
+test drivers and analysis tools may use Python; the user confirmed this split.
+
 The user authorizes cloning and modifying yabai when it improves this setup.
 Fork yabai to the user's GitHub account before making native changes. The
 dedicated checkout is `~/dev/yabai`, with origin `agrippa1027/yabai` and
@@ -47,15 +53,22 @@ and ordinary clicks pass. The original desktop layout, Space assignments,
 pointer and focus were restored. Five native tests also pass under ASan/UBSan.
 The existing drag bindings, animation settings and motion preferences were retained.
 
-## 2. Smooth manual resizing — next
+## 2. Smooth manual resizing — active; one display verified
 
 One outcome: Option-right-drag resizes tiles responsively, and neighboring tiles
 settle correctly on release. Begin by measuring the current behavior.
 
-The installed Homebrew source has a 67.67 ms minimum interval in its drag-resize
-path, approximately 15 updates per second. This is a candidate bottleneck to
-measure before changing it; it is not a measured frame-rate result. Preserve
-the installed source build's Spaces fix if a native change is necessary.
+The [native implementation review and live results](M2-NATIVE.md) record the
+activated C implementation at fork commit `0ec99d5`; Python is limited to
+one-time tooling. Three gestures on the connected display observed 54–59 bounds
+changes/s with no updates delayed beyond 250 ms after release. All 24 native
+resize regressions pass under ASan/UBSan, and 43 activation tests pass. The
+second display still needs live verification when connected.
+
+The previous implementation had a 67.67 ms minimum interval, with an observed
+baseline of about 12.6 bounds changes/s. The active build uses integer timing
+and a 16 ms budget, with final endpoint reconciliation on release. The Spaces
+fix, milestone 1 drag behavior and resource-lifetime fixes remain in the fork.
 
 Done when resizing tracks the pointer without a queue of delayed updates,
 works on both displays, and returns to the idle resource baseline afterward.
