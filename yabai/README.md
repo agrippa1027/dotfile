@@ -8,6 +8,8 @@ The next phase follows the [small look-and-feel milestones](MILESTONES.md),
 starting with Option-drag tile rearrangement.
 The [milestone 1 native fix and live check](M1-DRAG.md) record the first concrete
 drag-placement regression and its correction in the personal yabai fork.
+The [performance audit](PERFORMANCE.md) records measured CPU/memory usage and
+the tested Accessibility lifetime fix prepared in that fork.
 
 ## Appearance and workspaces
 
