@@ -12,7 +12,7 @@ local cal = sbar.add("item", "calendar", {
 		font = {
 			family = settings.font.text,
 			style = settings.font.style_map.Regular,
-			size = 12.0,
+			size = 14.0,
 		},
 	},
 	label = {
@@ -20,7 +20,7 @@ local cal = sbar.add("item", "calendar", {
 		padding_right = 8,
 		width = 49,
 		align = "right",
-		font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 12 },
+		font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 14 },
 	},
 
 	position = "center",
@@ -102,9 +102,15 @@ local today_row = action(row("today", "Today", 8, colors.accent))
 local open_calendar = action(row("open", "Open Calendar  ↗", 8, colors.blue))
 
 local viewed = os.date("*t")
+local rendered_month
 local function render()
+	local key = string.format("%d-%d-%s", viewed.year, viewed.month, os.date("%Y-%m-%d"))
+	if rendered_month == key then
+		return
+	end
 	local month = calendar.month(viewed.year, viewed.month)
 	viewed.year, viewed.month = month.year, month.month
+	rendered_month = string.format("%d-%d-%s", viewed.year, viewed.month, os.date("%Y-%m-%d"))
 	heading:set({ label = month.title })
 	for index, week in ipairs(month.weeks) do
 		local contains_days = false
@@ -150,7 +156,7 @@ end
 
 cal:subscribe({ "forced", "routine", "system_woke" }, function()
 	cal:set({ icon = os.date("%a. %d %b."), label = os.date("%H:%M") })
-	if cal:query().popup.drawing == "on" then
+	if popup.is_open(cal) then
 		render()
 	end
 end)

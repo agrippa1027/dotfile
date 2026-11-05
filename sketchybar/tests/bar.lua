@@ -34,10 +34,10 @@ local function capture(module, method)
 	return assert(values, "Missing configuration")
 end
 
-test("bar is a continuous tinted 26px strip with no outer gaps", function()
+test("bar follows the configured height with no outer gaps", function()
 	local bar = capture("bar", "bar")
 	equal(bar.position, "top")
-	equal(bar.height, 26)
+	equal(bar.height, settings.bar.height)
 	equal(bar.margin, 0)
 	equal(bar.y_offset, 0)
 	equal(bar.padding_left, 8)
@@ -86,6 +86,7 @@ test("entry point loads the panels without adding floating group brackets", func
 	}, { __index = _G })
 	assert(loadfile(root .. "/init.lua", "t", env))()
 	equal(loaded.groups, nil)
+	equal(loaded["items.apple"], nil)
 	for _, name in ipairs({
 		"bar",
 		"default",
@@ -93,6 +94,7 @@ test("entry point loads the panels without adding floating group brackets", func
 		"items.calendar",
 		"items.widgets.battery",
 		"items.widgets.volume",
+		"items.widgets.display",
 		"items.widgets.wifi",
 		"items.widgets.bluetooth",
 		"items.panel_keys",

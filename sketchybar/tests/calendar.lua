@@ -98,6 +98,7 @@ function sbar.add(_, name, config)
 	local item =
 		{ name = name, config = config, properties = config, handlers = {}, initial_background = initial_background }
 	function item:set(values)
+		self.writes = (self.writes or 0) + 1
 		merge(self.properties, values)
 	end
 	function item:query()
@@ -143,7 +144,7 @@ test("clock is quiet mono and the popup uses the opaque theme frame", function()
 	equal(cal.properties.icon.font.family, settings.font.text)
 	equal(cal.properties.icon.font.style, settings.font.style_map.Regular)
 	equal(cal.properties.label.color, colors.white)
-	equal(cal.properties.label.font.size, 12)
+	equal(cal.properties.label.font.size, 14)
 	equal(cal.properties.popup.height, settings.popup.height)
 	equal(cal.properties.popup.background.color, colors.popup.bg)
 	equal(cal.properties.popup.background.border_color, colors.accent)
@@ -304,6 +305,24 @@ test("right click and Calendar footer launch native app", function()
 	click("calendar.open")
 	equal(commands[#commands], "open -a 'Calendar'")
 	equal(cal:query().popup.drawing, "off")
+end)
+
+test("unchanged month reopens and clock ticks do not redraw the grid", function()
+	cal.handlers["mouse.exited.global"]()
+	click("calendar")
+	local heading_writes = items["calendar.heading"].writes
+	local day_writes = items["calendar.day.1.1"].writes
+	cal.handlers["routine"]()
+	cal.handlers["mouse.exited.global"]()
+	click("calendar")
+	equal(items["calendar.heading"].writes, heading_writes)
+	equal(items["calendar.day.1.1"].writes, day_writes)
+	-- Crossing midnight must refresh the today highlight, even in the same month.
+	fixed = os.time({ year = 2026, month = 11, day = 5, hour = 12 })
+	cal.handlers["routine"]()
+	equal(items["calendar.heading"].writes, heading_writes + 1)
+	equal(items["calendar.day.1.1"].writes, day_writes + 1)
+	cal.handlers["mouse.exited.global"]()
 end)
 
 os.date = real_date

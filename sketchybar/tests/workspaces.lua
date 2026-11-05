@@ -312,15 +312,41 @@ test("starting the window query renews the command deadline", function()
 	equal(mock.items["workspace.1"].updates, 1)
 end)
 
-test("workspace clicks use the latest successfully rendered indices", function()
+test("workspace clicks keep stable labels across native index changes", function()
 	local mock = ready()
 	mock:fire()
 	mock:reply(3, { { index = 7, display = 2, label = "ws-1", ["has-focus"] = true } })
 	mock:reply(4, {})
 	mock.items["workspace.1"].handlers["mouse.clicked"]()
-	equal(mock.commands[5].command, "/opt/homebrew/bin/yabai -m space --focus '7'")
+	equal(mock.commands[5].command, "/opt/homebrew/bin/yabai -m space --focus 'ws-1'")
 	mock.items["workspace.2"].handlers["mouse.clicked"]()
 	equal(#mock.commands, 5)
+end)
+
+test("unnamed and custom desktops cannot impersonate managed labels", function()
+	local mock = fixture()
+	mock:reply(1, {
+		{ index = 1, display = 2, label = "ws-1" },
+		{ index = 2, display = 1, label = "ws-2" },
+		{ index = 3, display = 1, label = "" },
+		{ index = 4, display = 1, label = "ws-a" },
+		{ index = 5, display = 2, label = "a" },
+	})
+	mock:reply(2, {})
+	equal(mock.items["workspace.1"].values.display, 2)
+	equal(mock.items["workspace.3"].values.drawing, false)
+	equal(mock.items["workspace.a"].values.display, 1)
+	mock.items["workspace.2"].handlers["mouse.clicked"]()
+	equal(mock.commands[3].command, "/opt/homebrew/bin/yabai -m space --focus 'ws-2'")
+end)
+
+test("unnamed startup desktops retain native-index fallback before managed labels exist", function()
+	local mock = fixture()
+	mock:reply(1, { { index = 3, display = 2, label = "" } })
+	mock:reply(2, {})
+	equal(mock.items["workspace.3"].values.drawing, true)
+	mock.items["workspace.3"].handlers["mouse.clicked"]()
+	equal(mock.commands[3].command, "/opt/homebrew/bin/yabai -m space --focus '3'")
 end)
 
 print(passed .. " workspace tests passed")

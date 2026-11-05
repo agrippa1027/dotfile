@@ -1,523 +1,532 @@
--- Run with: lua sketchybar/tests/bluetooth.lua (from the .config directory).
--- All commands and time are mocked; the real popup bindings are exercised.
+-- All commands, dialogs, time and hardware are mocked.
 local root = (arg[0]:match("^(.*)/") or ".") .. "/.."
-local power_command = "/usr/bin/defaults read /Library/Preferences/com.apple.Bluetooth ControllerPowerState 2>/dev/null"
-local inventory_command = "/usr/sbin/system_profiler SPBluetoothDataType -json -detailLevel mini 2>/dev/null"
-local colors = {
-	white = "white",
-	grey = "grey",
-	accent = "accent",
-	blue = "blue",
-	transparent = "transparent",
-	popup = { bg = "opaque" },
-	panel = {
-		control = "control",
-		control_border = "control_border",
-		hover = "hover",
-		hover_border = "hover_border",
-		selected = "selected",
-	},
-}
-local settings = {
-	popup = {
-		width = 320,
-		height = 30,
-		padding = 14,
-		gap = 6,
-		control_height = 26,
-		corner_radius = 4,
-		border_width = 2,
-	},
-	font = { text = "Mono", style_map = { Bold = "Bold", Regular = "Regular" } },
-	commands = { bluetooth = "open bluetooth-settings" },
-}
-
-local function equal(actual, expected, message)
-	assert(
-		actual == expected,
-		(message or "value") .. ": expected " .. tostring(expected) .. ", got " .. tostring(actual)
-	)
+package.path = root .. "/?.lua;" .. package.path
+local colors, settings = require("colors"), require("settings")
+local controls = require("lib.bluetooth_controls")
+local defaults = "/usr/bin/defaults read /Library/Preferences/com.apple.Bluetooth ControllerPowerState 2>/dev/null"
+local A, B, C = "aa:bb:cc:dd:ee:01", "aa:bb:cc:dd:ee:02", "aa:bb:cc:dd:ee:03"
+local function dev(address, name, connected, paired)
+	return { address = address, name = name, connected = connected, paired = paired }
 end
-
 local function merge(target, values)
-	for key, value in pairs(values) do
-		if type(value) == "table" then
-			target[key] = target[key] or {}
-			merge(target[key], value)
-		elseif (key == "label" or key == "icon") and type(target[key]) == "table" then
-			target[key].string = value
+	for k, v in pairs(values) do
+		if type(v) == "table" then
+			target[k] = target[k] or {}
+			merge(target[k], v)
+		elseif (k == "label" or k == "icon") and type(target[k]) == "table" then
+			target[k].string = v
 		else
-			target[key] = value
+			target[k] = v
 		end
 	end
 end
-
-local function new_widget()
-	local mock = { now = 1000, items = {}, commands = {} }
+local function fixture()
+	local env = { now = 1000, items = {}, commands = {} }
 	local sbar = {}
 	function sbar.add(_, name, properties)
-		local initial_background = {}
-		merge(initial_background, properties.background or {})
-		local item =
-			{ name = name, properties = properties, subscriptions = {}, initial_background = initial_background }
+		local item = { name = name, properties = properties, handlers = {} }
 		function item:set(values)
 			merge(self.properties, values)
 		end
 		function item:query()
-			return { popup = { drawing = self.properties.popup.drawing and "on" or "off" } }
+			return { popup = { drawing = self.properties.popup and self.properties.popup.drawing and "on" or "off" } }
 		end
 		function item:subscribe(events, callback)
 			for _, event in ipairs(type(events) == "table" and events or { events }) do
-				self.subscriptions[event] = callback
+				self.handlers[event] = callback
 			end
 		end
-		mock.items[name] = item
+		env.items[name] = item
 		return item
 	end
 	function sbar.exec(command, callback)
-		mock.commands[#mock.commands + 1] = { command = command, callback = callback }
+		env.commands[#env.commands + 1] = { command = command, callback = callback }
 	end
-
-	local modules = { sketchybar = sbar, colors = colors, icons = { bluetooth = "BT" }, settings = settings }
-	local env = setmetatable({
+	local modules = {
+		sketchybar = sbar,
+		colors = colors,
+		settings = settings,
+		icons = { bluetooth = "BT" },
+		["lib.utils"] = require("lib.utils"),
+		["lib.bluetooth_controls"] = controls,
+	}
+	local scope = setmetatable({
 		os = {
 			time = function()
-				return mock.now
+				return env.now
 			end,
 		},
 		require = function(name)
-			return assert(modules[name], "Unexpected require: " .. name)
+			return assert(modules[name], name)
 		end,
 	}, { __index = _G })
-	modules["lib.popup"] = assert(loadfile(root .. "/lib/popup.lua", "t", env))()
-	modules["lib.panel"] = assert(loadfile(root .. "/lib/panel.lua", "t", env))()
-	mock.widget = assert(loadfile(root .. "/items/widgets/bluetooth.lua", "t", env))()
-
-	function mock:fire(event, values)
-		assert(self.widget.subscriptions[event], "Missing event: " .. event)(values or {})
+	modules["lib.panel"] = assert(loadfile(root .. "/lib/panel.lua", "t", scope))()
+	modules["lib.popup"] = assert(loadfile(root .. "/lib/popup.lua", "t", scope))()
+	local audio = sbar.add("item", "widgets.volume", { popup = { drawing = false } })
+	modules["lib.popup"].bind(audio, {
+		on_open = function()
+			env.audio_opened = true
+		end,
+	})
+	env.widget = assert(loadfile(root .. "/items/widgets/bluetooth.lua", "t", scope))()
+	function env:item(suffix)
+		return assert(self.items["widgets.bluetooth" .. (suffix and "." .. suffix or "")], suffix)
 	end
-	function mock:reply(index, result, status)
-		local request = assert(self.commands[index], "Missing command: " .. index)
-		assert(not request.replied, "Callback already delivered")
-		request.replied = true
-		assert(request.callback, "Missing callback")(result, status)
+	function env:fire(suffix, event, values)
+		assert(self:item(suffix).handlers[event], suffix or "owner")(values or {})
 	end
-	function mock:expect_commands(expected)
-		equal(#self.commands, #expected, "command count")
-		for index, command in ipairs(expected) do
-			equal(self.commands[index].command, command, "command " .. index)
-		end
+	function env:click(suffix)
+		self:fire(suffix, "mouse.clicked", { BUTTON = "left" })
 	end
-	function mock:status()
-		return self.items["widgets.bluetooth.status"].properties.label.string
-	end
-	function mock:device(index)
-		return self.items["widgets.bluetooth.device." .. index].properties
-	end
-	function mock:expect_empty()
-		for index = 1, 4 do
-			equal(self:device(index).drawing, false, "device visibility")
-			equal(self:device(index).label.string, "", "device label")
-		end
-	end
-	return mock
-end
-
-local function report(powered, names)
-	local devices = {}
-	for _, name in ipairs(names or {}) do
-		devices[#devices + 1] = { [name] = {} }
-	end
-	return {
-		SPBluetoothDataType = {
-			{
-				controller_properties = { controller_state = powered and "attrib_on" or "attrib_off" },
-				device_connected = devices,
-			},
-		},
-	}
-end
-
-local passed = 0
-local function test(name, run)
-	run()
-	passed = passed + 1
-	print("ok - " .. name)
-end
-
-test("Bluetooth uses matching title, section, mono body and opaque card geometry", function()
-	local mock = new_widget()
-	local heading = mock.items["widgets.bluetooth.heading"].properties
-	equal(heading.background.height, 42)
-	equal(heading.label.font.family, settings.font.text)
-	equal(heading.label.font.size, 14)
-	local section = mock.items["widgets.bluetooth.devices"].properties
-	equal(section.background.height, 28)
-	equal(section.label.font.size, 10)
-	equal(section.label.color, colors.grey)
-	equal(mock:device(1).label.font.family, settings.font.text)
-	equal(mock:device(1).label.font.size, 12)
-	local card = mock.widget.properties.popup
-	equal(card.background.color, colors.popup.bg)
-	equal(card.background.border_color, colors.accent)
-	equal(card.background.border_width, 2)
-	equal(card.background.corner_radius, 4)
-	-- Device rows only report connections; they must not imply a new action.
-	equal(mock.items["widgets.bluetooth.device.1"].subscriptions["mouse.clicked"], nil)
-	equal(mock.items["widgets.bluetooth.device.1"].subscriptions["mouse.entered"], nil)
-	mock:expect_commands({ power_command })
-end)
-
-test("all Bluetooth popup children including info and empty states have exact unpadded widths", function()
-	local mock = new_widget()
-	local function check_layout()
-		local children = 0
-		for _, item in pairs(mock.items) do
-			local props = item.properties
-			if props.position == "popup.widgets.bluetooth" then
-				children = children + 1
-				equal(props.width, settings.popup.width)
-				equal(item.initial_background.padding_left, 0)
-				equal(item.initial_background.padding_right, 0)
-				equal(props.background.padding_left, 0)
-				equal(props.background.padding_right, 0)
+	function env:take(fragment)
+		for _, request in ipairs(self.commands) do
+			if not request.replied and request.command:find(fragment, 1, true) then
+				request.replied = true
+				return request
 			end
 		end
-		equal(children, 9)
+		error("Missing command: " .. fragment)
 	end
-	check_layout()
-	mock:reply(1, "1", 0)
-	mock:fire("mouse.clicked")
-	mock:reply(2, report(true, { "Keyboard" }), 0)
-	mock.items["widgets.bluetooth.settings"].subscriptions["mouse.entered"]()
-	check_layout()
-	mock:fire("routine")
-	mock:reply(3, report(false), 0)
-	check_layout()
-	mock:fire("mouse.exited.global")
-	check_layout()
-end)
-
-test("settings hover uses shared geometry and resets on exit and dismissal", function()
-	local mock = new_widget()
-	mock:reply(1, "1", 0)
-	mock:fire("mouse.clicked")
-	mock:reply(2, report(true, { "Keyboard" }), 0)
-	local item = mock.items["widgets.bluetooth.settings"]
-	equal(item.properties.background.height, settings.popup.control_height)
-	equal(item.properties.background.corner_radius, 4)
-	equal(item.properties.background.border_width, 1)
-	item.subscriptions["mouse.entered"]()
-	equal(item.properties.background.color, colors.panel.hover)
-	equal(item.properties.background.border_color, colors.panel.hover_border)
-	equal(item.properties.label.color, colors.blue)
-	item.subscriptions["mouse.exited"]()
-	equal(item.properties.background.color, colors.panel.control)
-	equal(item.properties.background.border_color, colors.panel.control_border)
-	item.subscriptions["mouse.entered"]()
-	mock:fire("mouse.exited.global")
-	equal(item.properties.background.color, colors.panel.control)
-	mock:fire("mouse.clicked")
-	equal(item.properties.background.color, colors.panel.control)
-	mock:expect_commands({ power_command, inventory_command, inventory_command })
-end)
-
-test("connection status is accented and no-device, off and unavailable states stay clear", function()
-	local mock = new_widget()
-	mock:reply(1, "1", 0)
-	mock:fire("mouse.clicked")
-	mock:reply(2, report(true, { "Keyboard" }), 0)
-	local status = mock.items["widgets.bluetooth.status"].properties
-	local empty = mock.items["widgets.bluetooth.empty"].properties
-	equal(status.label.color, colors.accent)
-	equal(empty.drawing, false)
-	mock:fire("routine")
-	mock:reply(3, report(true), 0)
-	equal(status.label.color, colors.grey)
-	equal(empty.drawing, true)
-	equal(empty.label.string, "Connect a device in settings")
-	mock:expect_empty()
-	mock:fire("routine")
-	mock:reply(4, report(false), 0)
-	equal(empty.label.string, "Bluetooth is turned off")
-	equal(empty.drawing, true)
-	mock:fire("routine")
-	mock:reply(5, nil, 1)
-	equal(status.label.string, "Unavailable")
-	equal(status.label.color, colors.grey)
-	equal(empty.label.string, "Device status unavailable")
-	mock:expect_empty()
-end)
-
-test("collapsed startup, 60-second polling, forced refresh and wake use defaults", function()
-	local mock = new_widget()
-	equal(mock.widget.properties.update_freq, 60)
-	equal(mock.widget.properties.icon.string, "BT")
-	equal(mock.widget.properties.label.drawing, false)
-	mock:expect_commands({ power_command })
-	mock:reply(1, " \t1\n", 0)
-	equal(mock.widget.properties.icon.color, colors.white)
-	equal(mock:status(), "Checking…")
-	for index, event in ipairs({ "routine", "forced", "system_woke" }) do
-		mock:fire(event)
-		equal(mock.commands[index + 1].command, power_command)
-		mock:reply(index + 1, "1", 0)
+	function env:reply(fragment, value, code)
+		local request = self:take(fragment)
+		assert(request.callback, fragment)(value, code or 0)
 	end
-	mock:expect_commands({ power_command, power_command, power_command, power_command })
-end)
-
-test("a valid zero means radio off without inventory", function()
-	local mock = new_widget()
-	mock:reply(1, "0\n", 0)
-	mock:expect_commands({ power_command })
-	equal(mock.widget.properties.icon.color, colors.grey)
-	equal(mock:status(), "Radio off")
-	mock:expect_empty()
-end)
-
-test("visible popup inventories, sorts and caps devices, and stays synced when off", function()
-	local mock = new_widget()
-	mock:reply(1, "1", 0)
-	mock:fire("mouse.clicked", { BUTTON = "left" })
-	equal(mock.widget:query().popup.drawing, "on")
-	mock:reply(2, report(true, { "Zulu", "Echo", "Bravo", "Alpha", "Delta" }), 0)
-	equal(mock:status(), "5 connected")
-	equal(mock.items["widgets.bluetooth.devices"].properties.label.string, "CONNECTED DEVICES · MORE IN SETTINGS")
-	for index, name in ipairs({ "Alpha", "Bravo", "Delta", "Echo" }) do
-		equal(mock:device(index).drawing, true)
-		equal(mock:device(index).label.string, name)
-	end
-	mock:fire("routine")
-	mock:reply(3, report(false, { "Stale device" }), 0)
-	equal(mock:status(), "Radio off")
-	equal(mock.widget.properties.icon.color, colors.grey)
-	equal(mock.items["widgets.bluetooth.devices"].properties.label.string, "CONNECTED DEVICES")
-	mock:expect_empty()
-	mock:fire("system_woke")
-	mock:reply(4, report(true), 0)
-	equal(mock:status(), "No devices connected")
-	equal(mock.widget.properties.icon.color, colors.white)
-	mock:expect_empty()
-	mock:fire("mouse.exited.global")
-	mock:fire("forced")
-	mock:reply(5, "1", 0)
-	mock:expect_commands({ power_command, inventory_command, inventory_command, inventory_command, power_command })
-end)
-
-test("collapsed power checks preserve inventory on, and clear stale devices off", function()
-	local mock = new_widget()
-	mock:reply(1, "1", 0)
-	mock:fire("mouse.clicked")
-	mock:reply(2, report(true, { "Keyboard" }), 0)
-	mock:fire("mouse.exited.global")
-	mock:fire("routine")
-	mock:reply(3, "1", 0)
-	equal(mock:status(), "1 connected")
-	equal(mock:device(1).label.string, "Keyboard")
-	mock:fire("routine")
-	mock:reply(4, "0", 0)
-	equal(mock:status(), "Radio off")
-	mock:expect_empty()
-	mock:expect_commands({ power_command, inventory_command, power_command, power_command })
-end)
-
-for _, invalid in ipairs({
-	{ name = "missing value", status = 0 },
-	{ name = "empty value", value = "", status = 0 },
-	{ name = "unexpected number", value = "2", status = 0 },
-	{ name = "boolean text", value = "true", status = 0 },
-	{ name = "multiple values", value = "1\n0", status = 0 },
-	{ name = "non-string value", value = {}, status = 0 },
-	{ name = "failed query with zero", value = "0", status = 1 },
-	{ name = "failed query with one", value = "1", status = 1 },
-	{ name = "missing exit status", value = "1" },
-}) do
-	test("defaults fallback: " .. invalid.name, function()
-		local mock = new_widget()
-		mock:reply(1, invalid.value, invalid.status)
-		mock:expect_commands({ power_command, inventory_command })
-		equal(mock:status(), "Checking…")
-		mock:reply(2, report(true, { "Headphones" }), 0)
-		equal(mock.widget.properties.icon.color, colors.white)
-		equal(mock:status(), "1 connected")
-		equal(mock:device(1).label.string, "Headphones")
-		mock:fire("routine")
-		mock:reply(3, "1", 0)
-		mock:expect_commands({ power_command, inventory_command, power_command })
-	end)
-end
-
-test("fallback can confirm radio off", function()
-	local mock = new_widget()
-	mock:reply(1, "", 1)
-	mock:reply(2, report(false), 0)
-	equal(mock:status(), "Radio off")
-	mock:expect_empty()
-end)
-
-for _, invalid in ipairs({
-	{ name = "command failure", value = report(false), status = 1 },
-	{ name = "missing report", status = 0 },
-	{ name = "non-JSON output", value = "invalid JSON", status = 0 },
-	{ name = "missing controller", value = { SPBluetoothDataType = { {} } }, status = 0 },
-	{
-		name = "unknown controller state",
-		value = { SPBluetoothDataType = { { controller_properties = { controller_state = "unknown" } } } },
-		status = 0,
-	},
-}) do
-	test("query failure is not radio off: " .. invalid.name, function()
-		local mock = new_widget()
-		mock:reply(1, "1", 0)
-		mock:fire("mouse.clicked")
-		mock:reply(2, report(true, { "Keyboard" }), 0)
-		mock:fire("mouse.exited.global")
-		mock:fire("routine")
-		mock:reply(3, "", 1)
-		mock:reply(4, invalid.value, invalid.status)
-		equal(mock.widget.properties.icon.color, colors.white)
-		equal(mock:status(), "Unavailable")
-		mock:expect_empty()
-		mock:fire("mouse.clicked")
-		mock:reply(5, report(true), 0)
-		equal(mock:status(), "No devices connected")
-	end)
-end
-
-for _, power in ipairs({ "1", "0" }) do
-	test("popup opening during routine power " .. power .. " queues details", function()
-		local mock = new_widget()
-		mock:reply(1, "1", 0)
-		mock:fire("routine")
-		mock:fire("mouse.clicked")
-		mock:fire("system_woke")
-		mock:expect_commands({ power_command, power_command })
-		mock:reply(2, power, 0)
-		mock:expect_commands({ power_command, power_command, inventory_command })
-		if power == "0" then
-			equal(mock:status(), "Radio off")
-			mock:expect_empty()
+	function env:count(fragment)
+		local count = 0
+		for _, r in ipairs(self.commands) do
+			if r.command:find(fragment, 1, true) then
+				count = count + 1
+			end
 		end
-		mock:reply(3, report(power == "1", { "Mouse" }), 0)
-		equal(mock:status(), power == "1" and "1 connected" or "Radio off")
-	end)
+		return count
+	end
+	function env:label(suffix)
+		return self:item(suffix).properties.label.string
+	end
+	function env:message()
+		return self:label("message")
+	end
+	function env:inventory(remembered, live)
+		self:reply("--power", "1")
+		self:reply("--paired", remembered or { dev(A, "Buds", false, true), dev(B, "Keyboard", true, true) })
+		self:reply("--connected", live or { dev(B, "Keyboard", true, true) })
+	end
+	function env:open()
+		self:reply(defaults, "1")
+		self:click()
+		self:inventory()
+		self:reply("system_profiler", nil, 1)
+	end
+	return env
+end
+local total = 0
+local function test(name, fn)
+	fn()
+	total = total + 1
+	print("ok " .. total .. " - " .. name)
+end
+local function equal(a, b)
+	assert(a == b, "expected " .. tostring(b) .. ", got " .. tostring(a))
 end
 
-test("opening and closing during startup does not force hidden inventory", function()
-	local mock = new_widget()
-	mock:fire("mouse.clicked")
-	mock:fire("mouse.exited.global")
-	mock:reply(1, "1", 0)
-	mock:expect_commands({ power_command, power_command })
-	mock:reply(2, "1", 0)
+test("collapsed reads are cheap, coalesced and never scan or mutate", function()
+	local e = fixture()
+	equal(#e.commands, 1)
+	equal(e.commands[1].command, defaults)
+	for _ = 1, 20 do
+		e:fire(nil, "routine")
+	end
+	equal(#e.commands, 1)
+	e:reply(defaults, "1")
+	equal(#e.commands, 2)
+	e:reply(defaults, "0")
+	equal(e:count("--inquiry"), 0)
+	equal(e:count("--connect "), 0)
+	equal(e.widget.properties.update_freq, 60)
 end)
-
-test("reopening during inventory preserves the queued details refresh", function()
-	local mock = new_widget()
-	mock:reply(1, "1", 0)
-	mock:fire("mouse.clicked")
-	mock:fire("mouse.exited.global")
-	mock:fire("mouse.clicked")
-	mock:reply(2, report(true, { "Old device" }), 0)
-	mock:expect_commands({ power_command, inventory_command, inventory_command })
-	mock:reply(3, report(true, { "New device" }), 0)
-	equal(mock:device(1).label.string, "New device")
+test("opening during a startup read queues a detailed refresh", function()
+	local e = fixture()
+	e:click()
+	equal(e:count("--paired"), 0)
+	e:reply(defaults, "1")
+	e:inventory()
+	e:reply("system_profiler", nil, 1)
+	equal(e:label("status"), "1 connected · 1 remembered")
 end)
-
-test("lost power callback retries only on the next event at age 65", function()
-	local mock = new_widget()
-	mock.now = 1064
-	mock:fire("routine")
-	mock:expect_commands({ power_command })
-	mock.now = 1065
-	mock:expect_commands({ power_command })
-	mock:fire("system_woke")
-	mock:expect_commands({ power_command, power_command })
-	mock:reply(1, "0", 0)
-	equal(mock:status(), "Checking…")
-	mock:fire("routine")
-	mock:expect_commands({ power_command, power_command })
-	mock:reply(2, "1", 0)
-	mock:expect_commands({ power_command, power_command, power_command })
-	mock:reply(3, "1", 0)
-	equal(mock.widget.properties.icon.color, colors.white)
+test("connected and remembered devices expose explicit actions with shared geometry", function()
+	local e = fixture()
+	e:open()
+	equal(e:label("connected.1.info"), "Keyboard")
+	equal(e:label("connected.1.action"), "Disconnect")
+	equal(e:label("known.1.info"), "Buds")
+	equal(e:label("known.1.action"), "Connect")
+	equal(e:item("connected.1.action").properties.cursor, "pointer")
+	equal(e.widget.properties.popup.columns, 6)
+	for _, suffix in ipairs({ "connected.1.info", "connected.1.action", "connected.1.forget" }) do
+		local p = e:item(suffix).properties
+		equal(p.background.padding_left, 0)
+		equal(p.background.padding_right, 0)
+	end
+	equal(e:item("timer").properties.update_freq, 10)
 end)
-
-test("opening after a lost power callback recovers with inventory; stale failure is ignored", function()
-	local mock = new_widget()
-	mock.now = 1065
-	mock:fire("mouse.clicked")
-	mock:expect_commands({ power_command, inventory_command })
-	mock:reply(1, "", 1)
-	mock:expect_commands({ power_command, inventory_command })
-	mock:reply(2, report(true, { "Mouse" }), 0)
-	equal(mock:status(), "1 connected")
+test("a powered-off radio still offers Turn on without querying connected devices", function()
+	local e = fixture()
+	e:reply(defaults, "0")
+	e:click()
+	e:reply("--power", "0")
+	equal(e:label("power"), "Turn Bluetooth on")
+	equal(e:item("power").properties.cursor, "pointer")
+	equal(e:count("--connected"), 0)
+	equal(e:count("--paired"), 0)
 end)
-
-test("lost visible inventory recovers and ignores late reports", function()
-	local mock = new_widget()
-	mock:reply(1, "1", 0)
-	mock:fire("mouse.clicked")
-	mock.now = 1064
-	mock:fire("routine")
-	mock:expect_commands({ power_command, inventory_command })
-	mock.now = 1065
-	mock:fire("forced")
-	mock:expect_commands({ power_command, inventory_command, inventory_command })
-	mock:reply(3, report(true, { "Current device" }), 0)
-	mock:reply(2, report(false), 0)
-	equal(mock.widget.properties.icon.color, colors.white)
-	equal(mock:status(), "1 connected")
-	equal(mock:device(1).label.string, "Current device")
+test("connect is serialized, targets a validated captured address and verifies readback", function()
+	local e = fixture()
+	e:open()
+	e:click("known.1.action")
+	e:click("connected.1.action")
+	equal(e:count("--paired"), 2)
+	equal(e:label("known.1.action"), "Connecting…")
+	e:reply("--paired", { dev(A, "Buds", false, true) })
+	equal(e:take("--connect").command, controls.command("connect", A) .. " 2>/dev/null")
+	-- Complete the consumed mutation callback manually.
+	local r = e.commands[#e.commands]
+	r.callback("", 0)
+	e:reply("--paired", { dev(A, "Buds", true, true) })
+	equal(e:message(), "Device connected")
 end)
-
-test("lost fallback inventory recovers using current visibility and keeps the new guard", function()
-	local mock = new_widget()
-	mock:reply(1, "", 1)
-	mock.now = 1065
-	mock:fire("routine")
-	mock:expect_commands({ power_command, inventory_command, power_command })
-	mock:reply(2, report(false), 0)
-	equal(mock:status(), "Checking…")
-	mock:fire("forced")
-	mock:expect_commands({ power_command, inventory_command, power_command })
-	mock:reply(3, "1", 0)
-	mock:reply(4, "1", 0)
-	equal(mock.widget.properties.icon.color, colors.white)
+test("inventory captured before an action cannot replace its stable target or verified state", function()
+	local e = fixture()
+	e:open()
+	e:fire(nil, "forced")
+	local stale = e:take("--power")
+	e:click("known.1.action")
+	local preflight = e:take("--paired")
+	e:fire(nil, "forced") -- queued until the mutation settles
+	stale.callback("0", 0)
+	equal(e:label("known.1.info"), "Buds")
+	preflight.callback({ dev(A, "Buds", false, true) }, 0)
+	local write = e:take("--connect")
+	assert(write.command:find(A, 1, true))
+	assert(not write.command:find(C, 1, true))
+	write.callback("", 0)
+	e:reply("--paired", { dev(A, "Buds", true, true) })
+	equal(e:message(), "Device connected")
 end)
-
-test("chained fallback inventory renews its own 65-second recovery deadline", function()
-	local mock = new_widget()
-	mock.now = 1059
-	mock:reply(1, "", 1)
-	mock:expect_commands({ power_command, inventory_command })
-	mock.now = 1065
-	mock:fire("routine")
-	mock:expect_commands({ power_command, inventory_command })
-	mock.now = 1123
-	mock:fire("forced")
-	mock:expect_commands({ power_command, inventory_command })
-	mock.now = 1124
-	mock:expect_commands({ power_command, inventory_command })
-	mock:fire("system_woke")
-	mock:expect_commands({ power_command, inventory_command, power_command })
-	mock:reply(2, report(false), 0)
-	equal(mock:status(), "Checking…")
-	mock:reply(3, "1", 0)
-	equal(mock.widget.properties.icon.color, colors.white)
+test("multipoint earbuds use authoritative address snapshots for display and disconnect readback", function()
+	local e = fixture()
+	e:reply(defaults, "1")
+	e:click()
+	-- Report mode sees the connected multipoint device even if native API
+	-- enumeration omits it. Address spelling is normalized, never name-matched.
+	e:inventory({ dev(A:upper(), "Buds", true, true) }, {})
+	e:reply("system_profiler", nil, 1)
+	equal(e:label("connected.1.action"), "Disconnect")
+	equal(e:item("known.1.info").properties.drawing, false)
+	e:click("connected.1.action")
+	local preflight = e:take("--paired")
+	assert(preflight.command:find("BLUEUTIL_USE_SYSTEM_PROFILER=1", 1, true))
+	preflight.callback({ dev(A:upper(), "Buds", true, true) }, 0)
+	local write = e:take("--disconnect")
+	assert(write.command:find(A, 1, true))
+	write.callback("", 0)
+	e:reply("--paired", { dev(A:upper(), "Buds", false, true) })
+	equal(e:message(), "Device disconnected")
+	equal(e:count("--info"), 0)
 end)
-
-test("settings click behavior is unchanged and closes the popup", function()
-	local mock = new_widget()
-	mock:reply(1, "1", 0)
-	mock:fire("mouse.clicked", { BUTTON = "right" })
-	mock:expect_commands({ power_command, settings.commands.bluetooth })
-	equal(mock.widget:query().popup.drawing, "off")
-	mock:fire("mouse.clicked", { BUTTON = "left" })
-	mock:reply(3, report(true), 0)
-	mock.items["widgets.bluetooth.settings"].subscriptions["mouse.clicked"]()
-	equal(mock.widget:query().popup.drawing, "off")
-	mock:expect_commands({ power_command, settings.commands.bluetooth, inventory_command, settings.commands.bluetooth })
+test("failed or changed preflight cannot issue a device write", function()
+	for _, raw in ipairs({
+		dev(C, "Other", false, true),
+		dev(A, "Buds", false, false),
+		{ address = A, name = "Buds", paired = true },
+	}) do
+		local e = fixture()
+		e:open()
+		e:click("known.1.action")
+		e:reply("--paired", { raw })
+		equal(e:count("--connect "), 0)
+	end
 end)
-
-print(string.format("Passed %d Bluetooth regression tests", passed))
+test("lagging disconnect snapshots settle without repeating the mutation", function()
+	local e = fixture()
+	e:open()
+	e:click("connected.1.action")
+	e:reply("--paired", { dev(B, "Keyboard", true, true) })
+	e:reply("--disconnect", "", 0)
+	e:reply("--paired", { dev(B, "Keyboard", true, true) })
+	equal(e:label("connected.1.action"), "Disconnecting…")
+	local retry = e:take("--paired")
+	assert(retry.command:find("/bin/sleep 0.5; ", 1, true))
+	retry.callback({ dev(B:upper(), "Keyboard", false, true) }, 0)
+	equal(e:message(), "Device disconnected")
+	equal(e:count("--disconnect "), 1)
+end)
+test("connect and forget readback also tolerate delayed authoritative snapshots", function()
+	local e = fixture()
+	e:open()
+	e:click("known.1.action")
+	e:reply("--paired", { dev(A, "Buds", false, true) })
+	e:reply("--connect", "", 0)
+	e:reply("--paired", { dev(A, "Buds", false, true) })
+	e:reply("--paired", { dev(A, "Buds", false, true) })
+	e:reply("--paired", { dev(A, "Buds", true, true) })
+	equal(e:message(), "Device connected")
+	equal(e:count("--connect "), 1)
+	local f = fixture()
+	f:open()
+	f:click("known.1.forget")
+	f:reply("osascript", "Forget")
+	f:reply("--paired", { dev(A, "Buds", false, true) })
+	f:reply("--unpair", "", 0)
+	f:reply("--paired", { dev(A, "Buds", false, true) })
+	f:reply("--paired", {})
+	equal(f:message(), "Device forgotten")
+	equal(f:count("--unpair "), 1)
+end)
+test("permanent readback mismatch is bounded and never repeats the write", function()
+	local e = fixture()
+	e:open()
+	e:click("connected.1.action")
+	e:reply("--paired", { dev(B, "Keyboard", true, true) })
+	e:reply("--disconnect", "", 0)
+	for _ = 1, 10 do
+		e:reply("--paired", { dev(B, "Keyboard", true, true) })
+	end
+	assert(e:message():find("could not be verified", 1, true))
+	equal(e:count("--disconnect "), 1)
+	equal(e:count("/bin/sleep 0.5; "), 9)
+end)
+test("readback failure stops retries and a superseded delayed callback is ignored", function()
+	local e = fixture()
+	e:open()
+	e:click("known.1.action")
+	e:reply("--paired", { dev(A, "Buds", false, true) })
+	e:reply("--connect", "", 0)
+	e:reply("--paired", nil, 1)
+	assert(e:message():find("could not be verified", 1, true))
+	equal(e:count("/bin/sleep"), 0)
+	local f = fixture()
+	f:open()
+	f:click("known.1.action")
+	f:reply("--paired", { dev(A, "Buds", false, true) })
+	f:reply("--connect", "", 0)
+	f:reply("--paired", { dev(A, "Buds", false, true) })
+	local delayed = f:take("--paired")
+	f.now = f.now + 65
+	f:fire("timer", "routine")
+	local message = f:message()
+	delayed.callback({ dev(A, "Buds", true, true) }, 0)
+	equal(f:message(), message)
+	equal(f:count("--connect "), 1)
+end)
+test("failed writes report errors and do not perform optimistic state changes", function()
+	local e = fixture()
+	e:open()
+	e:click("known.1.action")
+	e:reply("--paired", { dev(A, "Buds", false, true) })
+	e:reply("--connect", "denied", 1)
+	assert(e:message():find("failed", 1, true))
+	equal(e:label("known.1.action"), "Connect")
+	e:click("known.1.action")
+	equal(e:item("message").properties.drawing, false)
+end)
+test("forget cancellation has no write and names are safe in native dialog scripts", function()
+	local e = fixture()
+	e:open()
+	e:fire(nil, "forced")
+	local name = 'Buds "quoted"\\name\n$(touch /tmp/nope)'
+	e:inventory({ dev(A, name, false, true) }, {})
+	e:click("known.1.forget")
+	local prompt = e:take("osascript")
+	assert(prompt.command:find('\\"quoted\\"', 1, true))
+	assert(prompt.command:find("$(touch /tmp/nope)", 1, true))
+	assert(prompt.command:find("-e '", 1, true))
+	prompt.callback("", 1)
+	equal(e:count("--unpair"), 0)
+	equal(e:count("--paired"), 2)
+end)
+test("native Forget confirmation survives popup dismissal and verifies removal", function()
+	local e = fixture()
+	e:open()
+	e:click("known.1.forget")
+	e:fire(nil, "mouse.exited.global")
+	e:reply("osascript", "Forget\n")
+	e:reply("--paired", { dev(A, "Buds", false, true) })
+	e:reply("--unpair", "", 0)
+	e:reply("--paired", { dev(B, "Keyboard", true, true) })
+	equal(e:item("timer").properties.update_freq, 0)
+	equal(e:count("--unpair"), 1)
+end)
+test("power off requires confirmation and exact state verification", function()
+	local e = fixture()
+	e:open()
+	e:click("power")
+	local prompt = e:take("osascript")
+	assert(prompt.command:find("keyboards, mice", 1, true))
+	prompt.callback("Turn off", 0)
+	e:reply("--power", "1")
+	e:reply("--power 0", "", 0)
+	e:reply("--power", "0")
+	equal(e:message(), "Bluetooth power updated")
+	equal(e:label("power"), "Turn Bluetooth on")
+end)
+test("power-on readback mismatch stays an error", function()
+	local e = fixture()
+	e:reply(defaults, "0")
+	e:click()
+	e:reply("--power", "0")
+	e:reply("system_profiler", nil, 1)
+	e:click("power")
+	e:reply("--power", "0")
+	e:reply("--power 1", "", 0)
+	e:reply("--power", "0")
+	equal(e:message(), "Power change could not be verified")
+end)
+test("nearby scan is opt-in and pairs through native Settings without hidden PIN prompts", function()
+	local e = fixture()
+	e:open()
+	equal(e:count("--inquiry"), 0)
+	e:click("scan")
+	equal(e:label("scan"), "Scanning…")
+	e:reply("--inquiry", { dev(C, "Speaker", false, false) })
+	equal(e:label("nearby.1.info"), "Speaker")
+	equal(e:label("nearby.1.action"), "Pair in Settings")
+	equal(e:item("nearby.1.forget").properties.cursor, "default")
+	e:click("nearby.1.action")
+	equal(e.commands[#e.commands].command, settings.commands.bluetooth)
+	equal(e:count("--pair "), 0)
+end)
+test("close stops polling and ignores late scan results across reopen", function()
+	local e = fixture()
+	e:open()
+	e:click("scan")
+	local scan = e:take("--inquiry")
+	e:fire(nil, "mouse.exited.global")
+	equal(e:item("timer").properties.update_freq, 0)
+	e:click()
+	e:inventory()
+	scan.callback({ dev(C, "Old nearby", false, false) }, 0)
+	equal(e:item("nearby.1.info").properties.drawing, false)
+end)
+test("closing cancels preflight but an executing mutation can finish hidden", function()
+	local e = fixture()
+	e:open()
+	e:click("known.1.action")
+	local old = e:take("--paired")
+	e:fire(nil, "mouse.exited.global")
+	old.callback({ dev(A, "Buds", false, true) }, 0)
+	equal(e:count("--connect "), 0)
+	local f = fixture()
+	f:open()
+	f:click("known.1.action")
+	f:reply("--paired", { dev(A, "Buds", false, true) })
+	f:fire(nil, "mouse.exited.global")
+	f:reply("--connect", "", 0)
+	f:reply("--paired", { dev(A, "Buds", true, true) })
+	equal(f:item("message").properties.drawing, false)
+end)
+test("lost scan and action callbacks recover on the visible watchdog", function()
+	local e = fixture()
+	e:open()
+	e:click("scan")
+	local old = e:take("--inquiry")
+	e.now = e.now + 65
+	e:fire("timer", "routine")
+	equal(e:label("scan"), "Scan nearby · 8s")
+	old.callback({ dev(C, "Late", false, false) }, 0)
+	equal(e:item("nearby.1.info").properties.drawing, false)
+	local f = fixture()
+	f:open()
+	f:click("known.1.action")
+	local stale = f:take("--paired")
+	f.now = f.now + 65
+	f:fire("timer", "routine")
+	stale.callback({ dev(A, "Buds", false, true) }, 0)
+	equal(f:count("--connect "), 0)
+	assert(f:message():find("timed out", 1, true))
+end)
+test("lost reads recover and old reports cannot replace current inventory", function()
+	local e = fixture()
+	e:reply(defaults, "1")
+	e:click()
+	local old = e:take("--power")
+	e.now = e.now + 65
+	e:fire("timer", "routine")
+	e:inventory({ dev(C, "Fresh", false, true) }, {})
+	old.callback("0", 0)
+	equal(e:label("known.1.info"), "Fresh")
+end)
+test("profiler fallback distinguishes remembered devices and disables actions without valid backend", function()
+	local e = fixture()
+	e:reply(defaults, "1")
+	e:click()
+	e:reply("--power", "", 127)
+	-- The first profiler request is optional battery enrichment; the next is fallback.
+	e:reply("system_profiler", nil, 1)
+	e:reply("system_profiler", {
+		SPBluetoothDataType = {
+			{
+				controller_properties = { controller_state = "attrib_on" },
+				device_connected = { { Mouse = { device_address = "redacted" } } },
+				device_not_connected = { { Speaker = { device_address = "redacted" } } },
+			},
+		},
+	})
+	equal(e:label("status"), "1 connected · 1 remembered")
+	equal(e:label("connected.1.info"), "Mouse")
+	equal(e:label("known.1.info"), "Speaker")
+	equal(e:item("connected.1.action").properties.cursor, "default")
+	equal(e:item("power").properties.cursor, "default")
+	e:click("connected.1.action")
+	equal(e:count("--disconnect"), 0)
+end)
+test("battery enrichment is reported only for matching real addresses", function()
+	local e = fixture()
+	e:reply(defaults, "1")
+	e:click()
+	e:inventory()
+	e:reply("system_profiler", {
+		SPBluetoothDataType = {
+			{
+				controller_properties = { controller_state = "attrib_on" },
+				device_connected = { { Keyboard = { device_address = B, device_batteryLevelMain = "42%" } } },
+			},
+		},
+	})
+	equal(e:label("connected.1.info"), "Keyboard · 42%")
+end)
+test("Bluetooth LE accessories use native Settings instead of unsupported direct controls", function()
+	local e = fixture()
+	e:reply(defaults, "1")
+	e:click()
+	e:inventory()
+	e:reply("system_profiler", {
+		SPBluetoothDataType = {
+			{
+				controller_properties = { controller_state = "attrib_on" },
+				device_connected = { { Keyboard = { device_services = "0x400000 < BLE >" } } },
+			},
+		},
+	})
+	equal(e:label("connected.1.action"), "Settings ↗")
+	equal(e:item("connected.1.forget").properties.cursor, "default")
+	e:click("connected.1.forget")
+	equal(e:count("--unpair"), 0)
+	e:click("connected.1.action")
+	equal(e:count(settings.commands.bluetooth), 1)
+	equal(e:count("--disconnect"), 0)
+end)
+test("bounded sections advertise overflow and footer routes share lifecycle", function()
+	local e = fixture()
+	e:open()
+	e:fire(nil, "forced")
+	local list = {}
+	for i = 1, 6 do
+		list[#list + 1] = dev(string.format("aa:bb:cc:dd:ee:%02x", i), "Device " .. i, false, true)
+	end
+	e:inventory(list, {})
+	assert(e:label("known.heading"):find("MORE IN SETTINGS", 1, true))
+	e:click("audio")
+	equal(e.audio_opened, true)
+	equal(e:item("timer").properties.update_freq, 0)
+end)
+print("PASS: " .. total .. " Bluetooth panel tests")

@@ -1,0 +1,72 @@
+--- a/src/sketchybar.c
++++ b/src/sketchybar.c
+@@ -90,6 +90,7 @@
+                                  message_length + 1,
+                                  true               );
+   }
++  if (message != g_cmd) free(message);
+   return response;
+ }
+ 
+@@ -238,6 +239,8 @@
+     memcpy(&exit_code, message + 1 + sizeof(int), sizeof(int));
+     char* response = message + 1 + 2*sizeof(int);
+     lua_rawgeti(g_state, LUA_REGISTRYINDEX, callback_ref);
++    // exec callbacks are one-shot; the Lua stack owns the function now.
++    luaL_unref(g_state, LUA_REGISTRYINDEX, callback_ref);
+     if (!json_to_lua_table(g_state, response)) {
+       lua_pushstring(g_state, response);
+     }
+@@ -248,6 +251,7 @@
+ 
+     if (error && lua_gettop(g_state)) {
+       printf("[!] Lua: %s\n", lua_tostring(g_state, -1));
++      lua_pop(g_state, 1);
+     }
+     transaction_commit(g_state);
+     return;
+@@ -282,6 +286,7 @@
+ 
+       if (error && lua_gettop(g_state)) {
+         printf("[!] Lua: %s\n", lua_tostring(g_state, -1));
++        lua_pop(g_state, 1);
+       }
+       transaction_commit(g_state);
+       break;
+@@ -728,6 +733,7 @@
+   const char* command = lua_tostring(state, 1);
+ 
+   int pid = fork();
++  if (pid < 0 && callback_ref) luaL_unref(state, LUA_REGISTRYINDEX, callback_ref);
+   if (pid != 0) return 0;
+ 
+   alarm(60);
+@@ -746,12 +752,13 @@
+     int close_ret = pclose(file);
+     int exit_code = WEXITSTATUS(close_ret);
+ 
+-    size_t message_size = total_bytes + 2*sizeof(int) + sizeof(char);
++    size_t message_size = total_bytes + 2*sizeof(int) + 2*sizeof(char);
+     char message[message_size];
+     message[0] = '\x07';
+     memcpy(message + 1, &callback_ref, sizeof(int));
+     memcpy(message + 1 + sizeof(int), &exit_code, sizeof(int));
+     memcpy(message + 1 + 2*sizeof(int), result, total_bytes);
++    message[message_size - 1] = '\0';
+ 
+     mach_send_message(mach_get_bs_port(g_bootstrap_name),
+                       message,
+@@ -767,11 +774,13 @@
+   int callback_ref = (int)(intptr_t)context;
+ 
+   lua_rawgeti(g_state, LUA_REGISTRYINDEX, callback_ref);
++  luaL_unref(g_state, LUA_REGISTRYINDEX, callback_ref);
+   transaction_create(g_state);
+   int error = lua_pcall(g_state, 0, 0, 0);
+ 
+   if (error && lua_gettop(g_state)) {
+     printf("[!] Lua: %s\n", lua_tostring(g_state, -1));
++    lua_pop(g_state, 1);
+   }
+ 
+   transaction_commit(g_state);

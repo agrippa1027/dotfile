@@ -31,7 +31,7 @@ sbar.default({
 
 	background = {
 		drawing = true,
-		height = 26,
+		height = settings.bar.height,
 		corner_radius = 0,
 		color = colors.transparent,
 		border_width = 0,

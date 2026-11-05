@@ -6,12 +6,12 @@ local sbar = require("sketchybar")
 sbar.begin_config()
 require("bar")
 require("default")
-require("items.apple")
 require("items.workspaces")
 
 require("items.calendar")
 require("items.widgets.battery")
 require("items.widgets.volume")
+require("items.widgets.display")
 require("items.widgets.wifi")
 require("items.widgets.bluetooth")
 

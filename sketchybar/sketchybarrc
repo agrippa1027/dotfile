@@ -20,7 +20,6 @@ if [[ -r "$pid_file" ]]; then
   fi
 fi
 
-sketchybar --load-font "$CONFIG_DIR/vendor/app-font/sketchybar-app-font.ttf"
 printf '%s\n' "$$" > "$pid_file"
 cd "$CONFIG_DIR"
 exec /opt/homebrew/bin/lua "$CONFIG_DIR/init.lua"

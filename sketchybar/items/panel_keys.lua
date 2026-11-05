@@ -3,6 +3,7 @@ local popup = require("lib.popup")
 
 local panels = {
 	audio = "widgets.volume",
+	display = "widgets.display",
 	network = "widgets.wifi",
 	bluetooth = "widgets.bluetooth",
 	power = "widgets.battery",

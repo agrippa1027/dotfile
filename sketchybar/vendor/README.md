@@ -1,6 +1,10 @@
 # Reused components
 
-- `app-font/icon_map.lua` and `app-font/sketchybar-app-font.ttf`: unmodified [sketchybar-app-font v2.0.87](https://github.com/kvndrsslr/sketchybar-app-font/releases/tag/v2.0.87), CC0-1.0; license in `app-font/LICENSE`. Keep the Lua map and font versions together.
+Local performance fixes for the native engine and pinned SbarLua runtime are
+kept in `../patches/`; see [performance notes](../PERFORMANCE.md). The SbarLua
+installer applies its lifetime patch before compiling, so reinstalling retains
+callback/message cleanup. The patches retain their respective upstream licenses.
+
 - `../items/widgets/volume.lua`, `../items/widgets/battery.lua`, `../items/calendar.lua`, `../icons.lua`, and `../default.lua`: adapted from [FelixKratz/dotfiles commit 67ad686ea6d4c29ccd54fdaa42cdf35f37a7219c](https://github.com/FelixKratz/dotfiles/tree/67ad686ea6d4c29ccd54fdaa42cdf35f37a7219c/.config/sketchybar), GPL-3.0. Original source remains available at that revision; adapted source is kept in this config.
 - `../items/widgets/wifi.lua`: popup structure adapted from the same GPL-3.0 source. The status reader detects the real interface, checks radio/link/address state, handles redacted network names, and refreshes periodically instead of relying on the broken modern macOS `wifi_change` event.
 - Official [SbarLua commit dba9cc421b868c918d5c23c408544a28aadf2f2f](https://github.com/FelixKratz/SbarLua/tree/dba9cc421b868c918d5c23c408544a28aadf2f2f), GPL-3.0: compiled by `scripts/install-sketchybar-lua.sh` into an ignored runtime folder, for the Lua 5.5 ABI. Runtime source is fetched from the pinned repository; no old 2024 binary is used.

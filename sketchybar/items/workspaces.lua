@@ -5,7 +5,7 @@ local utils = require("lib.utils")
 
 local workspace_order = { "1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "a" }
 local workspaces = {}
-local space_indices = {}
+local space_selectors = {}
 
 sbar.add("event", "yabai_workspace_change")
 
@@ -18,7 +18,7 @@ for _, id in ipairs(workspace_order) do
 		width = settings.workspaces.width,
 		icon = {
 			string = workspace,
-			font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 12 },
+			font = { family = settings.font.text, style = settings.font.style_map.Regular, size = 14 },
 			width = settings.workspaces.width,
 			align = "center",
 			padding_left = 0,
@@ -30,9 +30,9 @@ for _, id in ipairs(workspace_order) do
 		padding_right = settings.workspaces.gap,
 	})
 	item:subscribe("mouse.clicked", function()
-		local index = space_indices[workspace]
-		if index then
-			sbar.exec("/opt/homebrew/bin/yabai -m space --focus " .. utils.quote(index))
+		local selector = space_selectors[workspace]
+		if selector then
+			sbar.exec("/opt/homebrew/bin/yabai -m space --focus " .. utils.quote(selector))
 		end
 	end)
 	workspaces[workspace] = item
@@ -72,8 +72,17 @@ local function refresh()
 		local active = {}
 		local layouts = {}
 		local displays = {}
-		local indices = {}
+		local selectors = {}
 		local names = {}
+		local has_managed = false
+		for _, assignment in pairs(assignments) do
+			if type(assignment) == "table" and not assignment["is-native-fullscreen"] then
+				local label = assignment.label
+				if type(label) == "string" and label:match("^ws%-%w$") and workspaces[label:sub(4)] then
+					has_managed = true
+				end
+			end
+		end
 		for key, assignment in pairs(assignments) do
 			if
 				type(key) ~= "number"
@@ -86,15 +95,19 @@ local function refresh()
 			end
 			if not assignment["is-native-fullscreen"] then
 				local workspace = assignment.label
-				if type(workspace) ~= "string" or workspace == "" then
+				local selector = workspace
+				if has_managed then
+					workspace = type(workspace) == "string" and workspace:match("^ws%-(.)$") or nil
+				elseif type(workspace) ~= "string" or workspace == "" then
 					workspace = tostring(assignment.index)
-				else
+					selector = assignment.index
+				elseif type(workspace) == "string" then
 					workspace = workspace:gsub("^ws%-", "")
 				end
 				if workspaces[workspace] then
 					-- Both tools use native display ordering (yabai: display_arrangement_order=default).
 					displays[workspace] = assignment.display
-					indices[workspace] = assignment.index
+					selectors[workspace] = selector
 					names[assignment.index] = workspace
 					active[workspace] = assignment["has-focus"] or assignment["is-visible"]
 					layouts[workspace] = assignment.type
@@ -129,7 +142,7 @@ local function refresh()
 				end
 			end
 
-			space_indices = indices
+			space_selectors = selectors
 			for _, workspace in ipairs(workspace_order) do
 				local marker = layouts[workspace] == "float" and "▲" or "■"
 				workspaces[workspace]:set({
@@ -137,6 +150,7 @@ local function refresh()
 					display = displays[workspace] or 0,
 					icon = {
 						string = active[workspace] and marker or workspace,
+						font = { size = active[workspace] and 18 or 14 },
 						color = (active[workspace] or occupied[workspace]) and colors.white
 							or colors.bar.workspace_empty,
 					},

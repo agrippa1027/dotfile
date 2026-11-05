@@ -12,13 +12,12 @@ return {
 			Black = "Bold",
 		},
 	},
-	corner_radius = 8,
 	workspaces = {
 		width = 20,
 		gap = 1,
 	},
 	bar = {
-		height = 26,
+		height = 30,
 		margin = 0,
 		y_offset = 0,
 		blur_radius = 20,
@@ -37,11 +36,10 @@ return {
 		control_height = 26,
 	},
 	commands = {
-		settings = "open -a 'System Settings'",
-		activity = "open -a 'Activity Monitor'",
 		bluetooth = "open 'x-apple.systempreferences:com.apple.BluetoothSettings'",
 		battery = "open 'x-apple.systempreferences:com.apple.Battery-Settings.extension'",
 		sound = "open 'x-apple.systempreferences:com.apple.Sound-Settings.extension'",
+		display = "/usr/bin/open 'x-apple.systempreferences:com.apple.Displays-Settings.extension'",
 		wifi = "/usr/bin/open 'x-apple.systempreferences:com.apple.wifi-settings-extension'",
 	},
 }

@@ -8,19 +8,27 @@ function M.action(item, options)
 	options = options or {}
 	local hovered, selected, enabled = false, options.selected or false, options.enabled ~= false
 	local state = {}
+	local last_color, last_border, last_enabled
 	local function render()
+		local color = enabled
+				and (hovered and colors.panel.hover or selected and colors.panel.selected or colors.panel.control)
+			or colors.transparent
+		local border = hovered and colors.panel.hover_border or colors.panel.control_border
+		if color == last_color and border == last_border and enabled == last_enabled then
+			return
+		end
+		last_color, last_border, last_enabled = color, border, enabled
 		item:set({
+			cursor = enabled and "pointer" or "default",
 			background = {
 				drawing = true,
 				height = settings.popup.control_height,
 				padding_left = 0,
 				padding_right = 0,
 				corner_radius = settings.popup.corner_radius,
-				color = enabled
-						and (hovered and colors.panel.hover or selected and colors.panel.selected or colors.panel.control)
-					or colors.transparent,
+				color = color,
 				border_width = enabled and 1 or 0,
-				border_color = hovered and colors.panel.hover_border or colors.panel.control_border,
+				border_color = border,
 			},
 		})
 	end

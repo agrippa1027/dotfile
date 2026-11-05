@@ -48,6 +48,24 @@ test("disabled controls have no interactive chrome", function()
 	assert(row.background.color == colors.panel.control)
 end)
 
+test("only enabled actions advertise a pointing hand", function()
+	local row = item()
+	local state = ui.action(row)
+	assert(row.cursor == "pointer")
+	state:select(true)
+	state:reset()
+	assert(row.cursor == "pointer")
+	state:enable(false)
+	row.handlers["mouse.entered"]()
+	assert(row.cursor == "default")
+	state:enable(true)
+	assert(row.cursor == "pointer")
+	local caption = item()
+	ui.heading(caption)
+	ui.section(caption)
+	assert(caption.cursor == nil)
+end)
+
 test("controls and headings do not add phantom grid padding", function()
 	local row = item()
 	ui.action(row)
@@ -58,6 +76,27 @@ test("controls and headings do not add phantom grid padding", function()
 	ui.section(row)
 	assert(row.label.font.size == 10 and row.label.color == colors.grey)
 	assert(row.background.padding_left == 0 and row.background.padding_right == 0)
+end)
+
+test("unchanged control state and repeated hover resets send no redraws", function()
+	local row, writes = item(), 0
+	local set = row.set
+	row.set = function(self, values)
+		writes = writes + 1
+		set(self, values)
+	end
+	local state = ui.action(row)
+	for _ = 1, 100 do
+		state:enable(true)
+		state:select(false)
+		state:reset()
+	end
+	assert(writes == 1)
+	row.handlers["mouse.entered"]()
+	row.handlers["mouse.entered"]()
+	assert(writes == 2)
+	state:reset()
+	assert(writes == 3 and row.background.color == colors.panel.control)
 end)
 
 local events, receiver, toggled, closed = {}, item(), {}, 0
@@ -91,10 +130,11 @@ assert(loadfile(
 	}, { __index = _G })
 ))()
 
-test("hotkeys register hidden receivers for all five existing panels", function()
+test("named events register hidden receivers for all six panels", function()
 	assert(events.omarchy_panel_toggle and events.omarchy_panel_close)
 	for alias, name in pairs({
 		audio = "widgets.volume",
+		display = "widgets.display",
 		network = "widgets.wifi",
 		bluetooth = "widgets.bluetooth",
 		power = "widgets.battery",

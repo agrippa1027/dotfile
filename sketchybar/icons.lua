@@ -1,7 +1,4 @@
 return {
-	apple = "􀣺",
-	gear = "􀍟",
-	cpu = "􀫥",
 	bluetooth = "",
 	volume = {
 		_100 = "􀊩",

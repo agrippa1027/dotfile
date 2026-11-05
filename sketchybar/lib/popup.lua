@@ -20,6 +20,9 @@ function M.close_all()
 end
 
 function M.is_open(owner)
+	if panels[owner.name] then
+		return active == panels[owner.name]
+	end
 	local state = owner:query()
 	return type(state) == "table" and type(state.popup) == "table" and state.popup.drawing == "on"
 end
@@ -29,18 +32,18 @@ function M.bind(owner, options)
 	local popup = {}
 
 	function popup:close()
-		local was_open = active == self or M.is_open(owner)
-		owner:set({ popup = { drawing = false }, background = { color = colors.transparent } })
-		if was_open and options.on_close then
-			options.on_close()
+		if active ~= self then
+			return
 		end
-		if active == self then
-			active = nil
+		active = nil
+		owner:set({ popup = { drawing = false }, background = { color = colors.transparent } })
+		if options.on_close then
+			options.on_close()
 		end
 	end
 
 	function popup:toggle()
-		if active == self or M.is_open(owner) then
+		if active == self then
 			self:close()
 			return
 		end

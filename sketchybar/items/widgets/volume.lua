@@ -39,6 +39,7 @@ local heading = sbar.add("item", "widgets.volume.heading", {
 	label = { string = "Master volume", color = colors.white },
 	align = "center",
 })
+
 panel.heading(heading)
 local slider = sbar.add("slider", "widgets.volume.slider", width - 80, {
 	position = "popup." .. volume.name,
@@ -50,9 +51,14 @@ local slider = sbar.add("slider", "widgets.volume.slider", width - 80, {
 		percentage = 0,
 		highlight_color = colors.accent,
 		background = { height = 5, corner_radius = 3, color = colors.bg2 },
-		knob = { string = "●", color = colors.white, font = { size = 11 } },
+		knob = {
+			string = "",
+			color = colors.white,
+			font = { family = settings.font.icon, style = settings.font.style_map.Regular, size = 11 },
+		},
 	},
 })
+
 local outputs_heading = sbar.add("item", "widgets.volume.outputs", {
 	position = "popup." .. volume.name,
 	width = width,
@@ -60,6 +66,7 @@ local outputs_heading = sbar.add("item", "widgets.volume.outputs", {
 	icon = { drawing = false },
 	label = { string = "OUTPUT DEVICES" },
 })
+
 panel.section(outputs_heading)
 local output_items = {}
 local output_names = {}
@@ -148,7 +155,7 @@ local function read_outputs()
 		output_actions[index]:reset()
 	end
 	sbar.exec(audio_source .. " -a -t output 2>/dev/null", function(result, status)
-		if request ~= output_revision or volume:query().popup.drawing ~= "on" then
+		if request ~= output_revision or not popup.is_open(volume) then
 			return
 		end
 		local names, seen = {}, {}
@@ -166,7 +173,7 @@ local function read_outputs()
 			return
 		end
 		sbar.exec(audio_source .. " -c -t output 2>/dev/null", function(current, current_status)
-			if request ~= output_revision or volume:query().popup.drawing ~= "on" then
+			if request ~= output_revision or not popup.is_open(volume) then
 				return
 			end
 			current = current_status == 0 and type(current) == "string" and utils.trim(current) or nil
@@ -223,7 +230,7 @@ for index, item in ipairs(output_items) do
 				return
 			end
 			read_volume()
-			if volume:query().popup.drawing == "on" then
+			if popup.is_open(volume) then
 				if status == 0 then
 					read_outputs()
 				else

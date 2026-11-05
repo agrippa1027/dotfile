@@ -9,6 +9,8 @@ trap 'rm -rf "$build_dir"' EXIT
 curl -fsSL "https://codeload.github.com/FelixKratz/SbarLua/tar.gz/$revision" \
   -o "$build_dir/source.tar.gz"
 tar -xzf "$build_dir/source.tar.gz" -C "$build_dir"
+# Release completed callbacks and standalone IPC messages in the pinned bridge.
+patch -d "$build_dir/SbarLua-$revision" -p1 < "$config_root/sketchybar/patches/sbarlua-lifetime.patch"
 make -C "$build_dir/SbarLua-$revision" install \
   INSTALL_DIR="$config_root/sketchybar/runtime"
 printf '%s\n' "$revision" > "$config_root/sketchybar/runtime/SBARLUA_VERSION"

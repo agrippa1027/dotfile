@@ -126,4 +126,29 @@ test("repeating a shortcut closes even during a missing native query", function(
 	popup.toggle("one")
 	assert(not item.opened)
 end)
+test("managed popup lifecycle never queries or splits a native transaction", function()
+	local popup, owner = fixture()
+	local a, b = owner("one"), owner("two")
+	local queries, writes = 0, 0
+	for _, item in ipairs({ a, b }) do
+		item.query = function()
+			queries = queries + 1
+			error("managed panels must use their lifecycle state")
+		end
+		local set = item.set
+		item.set = function(self, values)
+			writes = writes + 1
+			set(self, values)
+		end
+		popup.bind(item)
+	end
+	popup.toggle("one")
+	assert(popup.is_open(a) and not popup.is_open(b))
+	popup.toggle("two")
+	popup.close_all()
+	assert(not popup.is_open(a) and not popup.is_open(b))
+	a.handlers["mouse.exited.global"]()
+	b.handlers["mouse.exited.global"]()
+	assert(queries == 0 and writes == 4)
+end)
 print("PASS: " .. count .. " popup lifecycle tests")

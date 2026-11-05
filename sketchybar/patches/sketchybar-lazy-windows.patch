@@ -1,0 +1,120 @@
+--- a/src/bar.c
++++ b/src/bar.c
+@@ -94,7 +94,8 @@
+   int group_count = 0, item_count = 0;
+   for (int i = 0; i < g_bar_manager.bar_item_count; i++) {
+     struct bar_item* bar_item = g_bar_manager.bar_items[i];
+-    if (bar_item->position == POSITION_POPUP) continue;
++    if (bar_item->position == POSITION_POPUP || !bar_draws_item(bar, bar_item))
++      continue;
+ 
+     struct window* window = bar_item_get_window(bar_item, bar->adid);
+     window_set_level(window, g_bar_manager.window_level);
+@@ -126,7 +127,8 @@
+   if (!g_bar_manager.bar_needs_update) {
+     for (int i = 0; i < g_bar_manager.bar_item_count; i++) {
+       struct bar_item* bar_item = g_bar_manager.bar_items[i];
+-      struct window* window = bar_item_get_window(bar_item, bar->adid);
++      struct window* window = bar_item_find_window(bar_item, bar->adid);
++      if (!window) continue;
+ 
+       bool clips_bar = bar_item_clips_bar(bar_item);
+       if (!clips_bar || (!bar_draws_item(bar, bar_item))) {
+@@ -167,16 +169,17 @@
+ 
+   for (int i = 0; i < g_bar_manager.bar_item_count; i++) {
+     struct bar_item* bar_item = g_bar_manager.bar_items[i];
+-    struct window* window = bar_item_get_window(bar_item, bar->adid);
+-
+     if (!bar_draws_item(bar, bar_item)){
+-      if (!CGPointEqualToPoint(window->origin, g_nirvana)) {
++      struct window* window = bar_item_find_window(bar_item, bar->adid);
++      if (window && !CGPointEqualToPoint(window->origin, g_nirvana)) {
+         window_move(window, g_nirvana);
+       }
+ 
+       bar_item_remove_associated_bar(bar_item, bar->adid);
+       continue;
+     }
++
++    struct window* window = bar_item_get_window(bar_item, bar->adid);
+ 
+     bar_item_append_associated_bar(bar_item, bar->adid);
+ 
+--- a/src/bar_item.c
++++ b/src/bar_item.c
+@@ -543,6 +543,12 @@
+   return max(item_height, background_height);
+ }
+ 
++// Hit testing and hiding must never allocate windows for unseen popup rows.
++struct window* bar_item_find_window(struct bar_item* bar_item, uint32_t adid) {
++  if (!bar_item || adid < 1 || adid > bar_item->num_windows) return NULL;
++  return bar_item->windows[adid - 1];
++}
++
+ struct window* bar_item_get_window(struct bar_item* bar_item, uint32_t adid) {
+   if (adid < 1 || !bar_item) return NULL;
+   if (bar_item->num_windows < adid) {
+@@ -556,6 +562,19 @@
+   }
+ 
+   if (!bar_item->windows[adid - 1]) {
++    // A popup has a single target display. Move its existing row window
++    // instead of keeping a second backing surface for every monitor visited.
++    if (bar_item->position == POSITION_POPUP && bar_item->parent) {
++      for (uint32_t i = 0; i < bar_item->num_windows; i++) {
++        struct window* existing = bar_item->windows[i];
++        if (!existing) continue;
++        bar_item->windows[i] = NULL;
++        bar_item->windows[adid - 1] = existing;
++        bar_item->parent->popup.needs_ordering = true;
++        bar_item_needs_update(bar_item);
++        return existing;
++      }
++    }
+     struct window* window = window_create();
+     window_open(window, (CGRect){{g_nirvana.x, g_nirvana.y}, {1, 1}});
+     if (!bar_item->shadow) window_disable_shadow(window);
+--- a/src/bar_item.h
++++ b/src/bar_item.h
+@@ -131,6 +131,7 @@
+ uint32_t bar_item_get_height(struct bar_item* bar_item);
+ 
+ struct window* bar_item_get_window(struct bar_item* bar_item, uint32_t adid);
++struct window* bar_item_find_window(struct bar_item* bar_item, uint32_t adid);
+ uint32_t bar_item_get_window_adid(struct bar_item* bar_item,
+                                   struct window* window);
+ void bar_item_remove_window(struct bar_item* bar_item, uint32_t adid);
+--- a/src/bar_manager.c
++++ b/src/bar_manager.c
+@@ -639,7 +639,7 @@
+     if (!bar_item->drawing) continue;
+ 
+     for (int adid = 1; adid <= bar_item->num_windows; adid++) {
+-      struct window* window = bar_item_get_window(bar_item, adid);
++      struct window* window = bar_item_find_window(bar_item, adid);
+       if (!window) continue;
+ 
+       CGRect frame = window->frame;
+@@ -659,7 +659,7 @@
+     if (!bar_item->drawing) continue;
+ 
+     for (int adid = 1; adid <= bar_item->num_windows; adid++) {
+-      struct window* window = bar_item_get_window(bar_item, adid);
++      struct window* window = bar_item_find_window(bar_item, adid);
+       if (!window) continue;
+ 
+       if (window->id == wid) {
+--- a/src/popup.c
++++ b/src/popup.c
+@@ -60,7 +60,8 @@
+   for (int i = 0; i < popup->num_items; i++) {
+     struct bar_item* bar_item = popup->items[i];
+ 
+-    struct window* window = bar_item_get_window(bar_item, popup->adid);
++    struct window* window = bar_item_find_window(bar_item, popup->adid);
++    if (!window) continue;
+     window_set_level(window, level);
+     if (!first_window) first_window = window;
+ 
