@@ -132,7 +132,7 @@ case "${1:-}" in
       if ! jq -e '.["has-focus"]' <<<"$space" >/dev/null; then
         yb space --focus "$(jq -er '.index' <<<"$space")"
       fi
-      /opt/homebrew/bin/python3 "${XDG_CONFIG_HOME:-$HOME/.config}/yabai/order-spaces.py"
+      "${XDG_CONFIG_HOME:-$HOME/.config}/yabai/runtime/order-spaces"
     fi
     ;;
   cycle-window) cycle_window "${2:?Missing direction}" ;;

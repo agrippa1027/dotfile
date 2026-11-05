@@ -3,6 +3,8 @@
 set -euo pipefail
 export PATH="/opt/homebrew/bin:/usr/bin:/bin"
 case "${1:-}" in ''|--arrange) ;; *) exit 2 ;; esac
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+make -s -C "$script_dir"
 
 displays=$(yabai -m query --displays)
 # The larger external monitor hosts the numbered workspaces; the laptop gets a.
@@ -37,5 +39,4 @@ for label in 1 2 3 4 5 6 7 8 9 0 a; do
 done
 
 # Labels are stable; native Mission Control positions are not.
-script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
-/opt/homebrew/bin/python3 "$script_dir/order-spaces.py"
+"$script_dir/runtime/order-spaces"

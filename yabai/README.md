@@ -51,8 +51,14 @@ never selected as move sources or destinations.
 Mission Control's recent-use rearrangement is disabled. Configuration setup and
 Space/display lifecycle signals repair ordering, including after leaving Mission
 Control or moving a Space to another display. Docking preserves existing monitor
-assignments. `order-spaces.py` uses fresh native indices for each move and a lock
-to coalesce overlapping repair requests.
+assignments. The native C helper `runtime/order-spaces` uses fresh native indices
+for each move and a lock to coalesce overlapping repair requests. Event hooks
+and shortcuts run the executable directly, without starting Python.
+
+Build with `make -C ~/.config/yabai` (requires Xcode Command Line Tools,
+`pkg-config` and `json-c`; install the latter two with `brew install pkg-config
+json-c` if needed). Setup also builds it when the source changes. The binary
+statically links json-c, so running it needs no Homebrew JSON library.
 
 Option+N/P cycles managed labels in canonical order across monitors, skipping
 native fullscreen and unmanaged desktops. Direct shortcuts, bar clicks and app
@@ -63,15 +69,15 @@ display 2 contains `1, 3, 4, …, 9, 0`.
 Inspect or repair the order:
 
 ```sh
-python3 ~/.config/yabai/order-spaces.py --check    # 0 ordered, 1 needs repair, 2 error
-python3 ~/.config/yabai/order-spaces.py --dry-run  # show intended order; no changes
-python3 ~/.config/yabai/order-spaces.py            # reorder within current monitors
+~/.config/yabai/runtime/order-spaces --check    # 0 ordered, 1 needs repair, 2 error
+~/.config/yabai/runtime/order-spaces --dry-run  # show intended order; no changes
+~/.config/yabai/runtime/order-spaces            # reorder within current monitors
 ```
 
 From `~/.config`, run the focused regression suite:
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s yabai/tests -p 'test_*.py'
+make -C yabai test
 PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s skhd/tests -p 'test_*.py'
 lua sketchybar/tests/workspaces.lua
 ```

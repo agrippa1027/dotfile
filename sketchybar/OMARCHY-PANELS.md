@@ -113,7 +113,7 @@ Option+N/P cycles the same canonical labels across monitors, skipping fullscreen
 and unmanaged desktops. Shortcuts, bar clicks and app routing use stable labels.
 Native global indices remain grouped by display and need not match the labels.
 Mission Control's recent-use rearrangement is disabled, and lifecycle signals
-repair later changes. `yabai/order-spaces.py --check` and `--dry-run` inspect the
+repair later changes. `yabai/runtime/order-spaces --check` and `--dry-run` inspect the
 order without changing it; the default invocation repairs it.
 
 All 44 focused checks pass: 14 ordering, 6 navigation and 24 bar-workspace tests.

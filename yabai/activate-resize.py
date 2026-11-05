@@ -365,7 +365,9 @@ def check_candidate(candidate):
 
 
 def config_hashes():
-    return {str(path): sha(path) for path in (CONFIG, ROOT / 'setup-spaces.sh', ROOT / 'order-spaces.py', PLIST)}
+    return {str(path): sha(path) for path in (
+        CONFIG, ROOT / 'setup-spaces.sh', ROOT / 'order-spaces.c',
+        ROOT / 'Makefile', ROOT / 'runtime/order-spaces', PLIST)}
 
 
 def check_config(record):

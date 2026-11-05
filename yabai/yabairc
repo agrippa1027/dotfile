@@ -73,7 +73,7 @@ for event in window_created window_destroyed window_focused window_moved window_
   case "$event" in
     space_changed|space_created|space_destroyed|display_removed|display_moved|system_woke|mission_control_exit)
       # shellcheck disable=SC2016
-      signal_action='/opt/homebrew/bin/python3 "$HOME/.config/yabai/order-spaces.py"; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+      signal_action='"$HOME/.config/yabai/runtime/order-spaces"; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
       ;;
     *)
       # shellcheck disable=SC2016
@@ -93,6 +93,6 @@ yabai -m signal --remove rice-dock 2>/dev/null || true
 # Expand HOME when the signal runs.
   # shellcheck disable=SC2016
 yabai -m signal --add label=rice-dock event=dock_did_restart \
-  action='sudo -n /opt/homebrew/bin/yabai --load-sa; /opt/homebrew/bin/python3 "$HOME/.config/yabai/order-spaces.py"; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+  action='sudo -n /opt/homebrew/bin/yabai --load-sa; "$HOME/.config/yabai/runtime/order-spaces"; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
 
 "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change

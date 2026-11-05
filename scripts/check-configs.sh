@@ -27,6 +27,8 @@ assert_contains() {
 }
 
 require_file 'yabai config' "$config_root/yabai/yabairc"
+require_file 'Native Space ordering helper' "$config_root/yabai/runtime/order-spaces"
+[[ -x "$config_root/yabai/runtime/order-spaces" ]] || die 'Run make -C ~/.config/yabai to build the Space ordering helper'
 require_file 'skhd config' "$config_root/skhd/skhdrc"
 require_file 'Window shortcut helper' "$config_root/skhd/wm.sh"
 require_file 'Ghostty config' "$config_root/ghostty/config"
