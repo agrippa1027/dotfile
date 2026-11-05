@@ -4,6 +4,11 @@ The desktop uses yabai for native macOS Spaces, skhd for global shortcuts,
 and SketchyBar for the edge-to-edge Omarchy-style status bar. Retired AeroSpace
 and JankyBorders configurations have been removed.
 
+The next phase follows the [small look-and-feel milestones](MILESTONES.md),
+starting with Option-drag tile rearrangement.
+The [milestone 1 native fix and live check](M1-DRAG.md) record the first concrete
+drag-placement regression and its correction in the personal yabai fork.
+
 ## Appearance and workspaces
 
 - 10px window gaps and padding on every side; 30px reserved for SketchyBar

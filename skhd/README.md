@@ -42,6 +42,11 @@ available to apps. Option+Delete also keeps its native word-deletion behavior.
 | ⌃ ⌥ ⇧ R | Reload yabai configuration and shortcuts |
 | ⌥ drag / ⌥ right-drag | Move / resize windows |
 
+To rearrange tiles, hold Option before left-clicking and dragging a window.
+Drop in another tile's center to swap, or near an edge to insert on that side.
+Release the mouse before Option. Dragging from the window body also works;
+there must be another tiled window on the desktop to swap with.
+
 Space `a` is available with Option+A, through SketchyBar, and desktop cycling.
 Command+A stays Select All. Native Space labels use the internal prefix `ws-`
 (for example, `ws-0`); shortcuts and the bar show only the final character.
