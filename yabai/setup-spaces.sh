@@ -35,3 +35,7 @@ for label in 1 2 3 4 5 6 7 8 9 0 a; do
   [[ -n "$index" ]] || { printf 'No native Space available for label %s\n' "$label" >&2; exit 1; }
   yabai -m space "$index" --label "$native_label"
 done
+
+# Labels are stable; native Mission Control positions are not.
+script_dir=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)
+/opt/homebrew/bin/python3 "$script_dir/order-spaces.py"

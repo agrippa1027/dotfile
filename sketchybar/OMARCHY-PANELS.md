@@ -1,6 +1,6 @@
 # Omarchy-style desktop panels on macOS
 
-Updated: 2026-11-04
+Updated: 2026-11-05
 
 ## Purpose
 
@@ -8,8 +8,8 @@ Bring Omarchy's useful desktop-panel interactions to this macOS setup using
 SketchyBar, SbarLua and the existing Hubbamax palette. Extend the personal
 SketchyBar fork when its layout capabilities constrain the panels.
 
-This is an incremental implementation. The current focus is the calendar,
-audio controls and a richer Wi-Fi/network panel.
+This is an incremental implementation covering the calendar, audio, power,
+Wi-Fi/network controls and Bluetooth accessories.
 
 ## Repositories and branches
 
@@ -34,6 +34,8 @@ upstream commit `a18fc94` during this work.
   scroll navigation, today reset and a native Calendar shortcut.
 - Audio: volume slider, active-output indication and output-device selection
   through the existing `SwitchAudioSource` installation.
+- Display: per-display brightness through BetterDisplay, display selection,
+  slider and presets, current resolution/refresh rate, and native settings links.
 - Network: live download/upload rates, traffic graphs, transfer totals,
   router/internet latency, expandable connection details and refresh.
 - DNS: Automatic, Cloudflare, Google, Quad9 and custom IPv4/IPv6 addresses;
@@ -41,6 +43,9 @@ upstream commit `a18fc94` during this work.
   restore; verification after applying changes.
 - Network actions: Wi-Fi power control and an opt-in macOS `networkQuality`
   speed test showing download/upload capacity in Mbps.
+- Bluetooth: radio power, connected and remembered device sections, explicit
+  connect/disconnect, confirmed Forget, opt-in nearby discovery, reported
+  batteries and a shortcut to the audio output picker. Pairing uses Settings.
 - Shared behavior: one open panel at a time, close hooks to stop telemetry,
   consistent styling and safe handling of incomplete startup queries.
 - Engine: `popup.columns` and per-item `cell_span` support compact native grids
@@ -86,15 +91,107 @@ The topbar now follows the current Omarchy shell's
 and [`Workspaces.qml`](https://github.com/omacom/omarchy/blob/quattro/shell/plugins/bar/widgets/Workspaces.qml):
 
 - Continuous dark-tinted Hubbamax background at approximately 70% opacity with
-  20px blur, 26px height, zero outer margin/offset, square corners and no floating
+  20px blur, 30px height, zero outer margin/offset, square corners and no floating
   group brackets; 8px internal end insets. Popup backgrounds remain opaque.
 - Compact 20px workspace slots with 1px spacing, plain numbers and no app icons
   or filled active pills. Occupied numbers are bright, empty numbers half-opacity.
 - Each display marks its visible workspace with a square for tiled layouts or a
   triangle for floating layouts. Existing `0`/`a` labels and focus targets remain.
-- yabai reserves 26px for the bar plus 10px of top padding before app windows,
+- yabai reserves 30px for the bar plus 10px of top padding before app windows,
   matching the existing 10px window gaps and side/bottom padding.
 - Popup layouts, styling, controls and shortcuts are unchanged.
+
+## Strict workspace ordering
+
+Native managed Spaces now follow `1–9, 0, a` within each display while retaining
+their current monitor assignments. Reloading or docking preserves those
+assignments; `yabai/setup-spaces.sh --arrange` remains the explicit way to restore
+numbered Spaces to the largest display. Unnamed desktops remain at the end, and
+native fullscreen Spaces are never move sources or destinations.
+
+Option+N/P cycles the same canonical labels across monitors, skipping fullscreen
+and unmanaged desktops. Shortcuts, bar clicks and app routing use stable labels.
+Native global indices remain grouped by display and need not match the labels.
+Mission Control's recent-use rearrangement is disabled, and lifecycle signals
+repair later changes. `yabai/order-spaces.py --check` and `--dry-run` inspect the
+order without changing it; the default invocation repairs it.
+
+All 44 focused checks pass: 14 ordering, 6 navigation and 24 bar-workspace tests.
+Live repair preserved Space IDs, physical monitor UUIDs, window membership,
+focused Space and visible Spaces; a repeated setup pass made no moves. Commands
+and details are in the [yabai workspace notes](../yabai/README.md#strict-space-ordering).
+
+## Native cursor feedback
+
+The fork supports item `cursor=pointer|default`. Shared panel actions request a
+pointing hand while enabled, including the audio slider; disabled controls and
+read-only content retain the normal cursor. Native window ownership checks
+prevent covered panels from overriding another application's cursor. Existing
+engine events restore the cursor on hide, close, removal and reload, without a
+new polling timer or application activation.
+
+The signed universal cursor build is installed. Its prior binary and build
+metadata are preserved in ignored `runtime/sketchybar-before-cursor` and
+`runtime/CURSOR_BUILD.json`. Live checks verified the hand, stationary
+disable/re-enable, hidden controls, panel close and unchanged app focus. Native
+lifecycle/parser tests and the shared Lua control tests pass; the unrelated
+bar/calendar size assertions described in the review still need updating.
+
+The cursor follow-up separates window ownership from cursor shape. Background
+cursor permission stays active over popup headings and gaps while the native
+image switches from hand to arrow, then releases when leaving SketchyBar.
+Existing engine events also reconcile a later cursor-image override from
+another app. Live checks verified the actual hand and arrow images on controls,
+headings and gaps inside all five popups, without a bar query after each move.
+Native ownership regressions pass under AddressSanitizer/UBSan.
+
+## Bluetooth controls and remaining parity
+
+The current [Omarchy Bluetooth panel](https://github.com/omacom/omarchy/blob/quattro/shell/plugins/panels/bluetooth/Panel.qml)
+groups connected, remembered and discovered devices, and combines radio/device
+actions with battery status and keyboard navigation. The macOS panel now follows
+that structure using the existing `blueutil` installation and native popup grid.
+
+Bluetooth radio/device mutations run only after explicit clicks. Off and Forget
+use confirmations. Targets are validated device addresses, so a reordered list
+or a shell-sensitive peripheral name cannot redirect an action. Readback checks
+the resulting state; command failures remain visible. Unknown battery levels
+are omitted. A profiler fallback provides read-only information when direct
+queries are unavailable.
+
+New-device pairing opens macOS Settings because `blueutil`'s PIN and numeric
+confirmation callbacks read terminal input. Running those callbacks in a
+background bar process would hide the authentication exchange. Scanning is an
+explicit finite inquiry, rather than continuous discovery while the popup is
+open. Automated Bluetooth tests mock mutations; the later live action checks
+are described below.
+
+Multipoint status follow-up: the default IOBluetooth paired-device query reported
+connected earbuds as disconnected while macOS's Bluetooth report correctly
+listed them as connected. Snapshots now use
+`BLUEUTIL_USE_SYSTEM_PROFILER=1 blueutil --paired/--connected --format json`.
+Action preflight and verification select the captured address from the same
+report-based snapshot, avoiding inconsistent status from the default `--info`
+path. Power, discovery and mutation commands retain their original APIs.
+This behavior is documented by [blueutil](https://github.com/toy/blueutil#alternative-method).
+
+Live action validation later covered an actual earbuds connect/disconnect cycle.
+Device readback now retries bounded snapshots rather than rejecting a lagging
+macOS report immediately. The Keychron was a separate case: the Classic backend
+returned "Device not connected" while macOS still reported its BLE connection.
+Reported BLE accessories now use native Settings controls instead of advertising
+unsupported direct disconnect/forget actions. The earbuds connection and audio
+output were restored after testing.
+
+| Area | Current coverage | Remaining gap |
+| --- | --- | --- |
+| Visual language | Continuous bar, compact workspaces, shared framed cards and native cursors | Further reference-based polish and animation |
+| Calendar | Month navigation, ISO weeks, today highlight | In-panel keyboard navigation |
+| Audio | Master volume and output picker | Per-app mixing |
+| Display | BetterDisplay brightness slider/presets, display picker and mode readouts | In-panel mode, refresh-rate, mirroring and arrangement changes |
+| Network | Live rates/history, latency, DNS, radio and speed test | Direct scan/join flow |
+| Bluetooth | Power, device management, nearby scan and battery readouts | In-panel authenticated pairing and keyboard navigation |
+| Power | Source, charging state and estimates | Power-profile switching and display controls |
 
 ## Code map
 
@@ -107,9 +204,13 @@ Paths below are relative to the dotfiles repository unless stated otherwise.
 | `sketchybar/items/calendar.lua` | Clock and calendar popup |
 | `sketchybar/lib/calendar.lua` | Month and ISO-week calculations |
 | `sketchybar/items/widgets/volume.lua` | Audio controls and output picker |
+| `sketchybar/items/widgets/display.lua` | Display picker, brightness controls and popup lifecycle |
+| `sketchybar/helpers/display_control.py` | Bounded BetterDisplay CLI bridge and exact-UUID readback verification |
 | `sketchybar/items/widgets/wifi.lua` | Wi-Fi status reader and panel integration |
 | `sketchybar/items/widgets/network_panel.lua` | Network UI, telemetry and actions |
 | `sketchybar/lib/network_controls.lua` | Counter parsing, rates, DNS validation and command construction |
+| `sketchybar/items/widgets/bluetooth.lua` | Bluetooth popup, lifecycle and explicit device actions |
+| `sketchybar/lib/bluetooth_controls.lua` | Bluetooth address validation, command construction and device models |
 | `sketchybar/lib/popup.lua` | Shared open/close lifecycle, named toggles and active-item styling |
 | `sketchybar/lib/panel.lua` | Heading/section hierarchy and hover/selected/disabled control styling |
 | `sketchybar/items/panel_keys.lua` | Hidden receivers for skhd panel shortcuts |
@@ -181,8 +282,8 @@ readback/reopen race that could temporarily block later actions.
 
 ## Remaining work and limits
 
-- Wi-Fi scanning/joining and Bluetooth pairing still open macOS settings.
-  Direct discovery, credential entry and pairing are future integration work.
+- Wi-Fi scanning/joining and authenticated Bluetooth pairing still open macOS
+  settings. Bluetooth nearby discovery is available directly in the panel.
 - macOS can redact the connected Wi-Fi name.
 - Per-app audio mixing, display controls, power-profile switching, in-panel
   arrow/Tab navigation and Quickshell-style animations are not implemented.

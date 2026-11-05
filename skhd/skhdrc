@@ -74,7 +74,6 @@ ctrl + alt + shift - tab : "$HOME/.config/skhd/wm.sh" cycle-display prev
 
 # Layout and ricing
 alt - t : /opt/homebrew/bin/yabai -m window --toggle float
-alt - j : /opt/homebrew/bin/yabai -m window --toggle split
 alt - f : /opt/homebrew/bin/yabai -m window --toggle zoom-fullscreen
 ctrl + alt - f : /opt/homebrew/bin/yabai -m window --toggle native-fullscreen
 alt - o : "$HOME/.config/skhd/wm.sh" sticky

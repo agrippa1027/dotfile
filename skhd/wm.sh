@@ -6,23 +6,30 @@ yabai_bin="${YABAI_BIN:-/opt/homebrew/bin/yabai}"
 
 yb() { "$yabai_bin" -m "$@"; }
 
-space_index() {
+space_selector() {
+  case "$1" in [1-9]|0|a) ;; *) printf 'Invalid workspace: %s\n' "$1" >&2; return 2 ;; esac
   yb query --spaces | jq -er --arg label "ws-$1" '
-    first(.[] | select(.label == $label and .["is-native-fullscreen"] == false) | .index)'
+    first(.[] | select(.label == $label and .["is-native-fullscreen"] == false) | .label)'
 }
 
-# Stable native indices and explicit wraparound; native fullscreen is skipped.
+# Labels retain their meaning when native indices change or monitors differ.
 cycle_space() {
+  case "$1" in next|prev) ;; *) printf 'Invalid direction: %s\n' "$1" >&2; return 2 ;; esac
   local destination
   destination=$(yb query --spaces | jq -er --arg direction "$1" '
     sort_by(.index) as $all |
-    ($all | map(select(.["is-native-fullscreen"] == false))) as $spaces |
+    ["ws-1", "ws-2", "ws-3", "ws-4", "ws-5", "ws-6", "ws-7", "ws-8", "ws-9", "ws-0", "ws-a"] as $order |
+    ($all | map(select(.["is-native-fullscreen"] == false))) as $ordinary |
+    ($ordinary | map(select(.label as $label | $order | index($label) != null)) |
+      sort_by(.label as $label | $order | index($label))) as $managed |
+    (if ($managed | length) > 0 then $managed else $ordinary end) as $spaces |
     ($all | map(select(.["has-focus"])) | first | .index) as $current |
-    if $direction == "next" then
-      ([$spaces[] | select(.index > $current)] | first // $spaces[0])
-    else
-      ([$spaces[] | select(.index < $current)] | last // $spaces[-1])
-    end | .index // empty')
+    ($spaces | map(.index) | index($current)) as $position |
+    if ($spaces | length) == 0 then empty
+    elif $position == null then
+      $spaces[if $direction == "next" then 0 else -1 end]
+    else $spaces[(($position + (if $direction == "next" then 1 else -1 end)) + ($spaces | length)) % ($spaces | length)]
+    end | if ($managed | length) > 0 then .label else .index end')
   yb space --focus "$destination"
 }
 
@@ -89,11 +96,11 @@ scratch() {
 
 case "${1:-}" in
   space)
-    destination=$(space_index "${2:?Missing space label}")
+    destination=$(space_selector "${2:?Missing space label}")
     yb space --focus "$destination"
     ;;
   move)
-    destination=$(space_index "${2:?Missing space label}")
+    destination=$(space_selector "${2:?Missing space label}")
     yb window --space "$destination"
     if [[ "${3:-}" == follow ]]; then yb space --focus "$destination"; fi
     ;;
@@ -125,6 +132,7 @@ case "${1:-}" in
       if ! jq -e '.["has-focus"]' <<<"$space" >/dev/null; then
         yb space --focus "$(jq -er '.index' <<<"$space")"
       fi
+      /opt/homebrew/bin/python3 "${XDG_CONFIG_HOME:-$HOME/.config}/yabai/order-spaces.py"
     fi
     ;;
   cycle-window) cycle_window "${2:?Missing direction}" ;;

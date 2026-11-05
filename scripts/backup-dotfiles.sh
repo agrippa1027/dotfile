@@ -27,17 +27,14 @@ checksum="$archive.sha256"
 
 backup_items=(
   .config/.zshrc
-  .config/aerospace
   .config/yabai
   .config/skhd
   .config/sketchybar
-  .config/borders
   .config/ghostty
   .config/tmux
   .config/starship.toml
   .config/zed/settings.json
   .config/zed/keymap.json
-  .config/theme
   .config/scripts
 )
 

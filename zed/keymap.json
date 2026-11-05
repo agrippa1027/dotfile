@@ -20,10 +20,6 @@
       // navigation / pickers
       "space space": "file_finder::Toggle",
       "space f f": "file_finder::Toggle",
-      "space f d": [
-        "task::Spawn",
-        { "task_name": "Dired: Browse Files", "reveal_target": "center" },
-      ],
       "space f r": "projects::OpenRecent",
       "space f n": "workspace::NewFile",
       "space ,": "tab_switcher::ToggleAll",
@@ -145,10 +141,6 @@
       // finders / pickers
       "space space": "file_finder::Toggle",
       "space f f": "file_finder::Toggle",
-      "space f d": [
-        "task::Spawn",
-        { "task_name": "Dired: Browse Files", "reveal_target": "center" },
-      ],
       "space f r": "projects::OpenRecent",
       "space f n": "workspace::NewFile",
       "space ,": "tab_switcher::ToggleAll",
@@ -265,9 +257,8 @@
   // ============================================================
   {
     // When a prediction conflicts (LSP menu open or leading whitespace) Zed hides it
-    // behind ⌥ (hold to preview) and defaults accept to ⌥-tab — which AeroSpace steals
-    // for workspace-back-and-forth. Rebind accept to ⌥-y: the ⌥-preview flow stays, but
-    // you press y instead of tab.
+    // behind ⌥ (hold to preview) and defaults accept to ⌥-tab. Rebind accept to ⌥-y:
+    // the ⌥-preview flow stays, but you press y instead of tab.
     "context": "Editor && edit_prediction",
     "bindings": {
       "alt-y": "editor::AcceptEditPrediction",

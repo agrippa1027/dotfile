@@ -2,12 +2,9 @@ configstore
 github-copilot
 gtk-2.0
 jgit
-neofetch
 nvim-back
 qBittorrent
 raycast
-wireshark
-ytmdl
 QtProject
 fontforge
 htop
@@ -22,5 +19,3 @@ zsh/secrets.zsh
 tmux/plugins
 .omx
 sketchybar/runtime/
-
-nnn/.lastd

@@ -74,10 +74,9 @@ zstyle ':fzf-tab:complete:cd:*' fzf-preview 'ls -G $realpath'
 zstyle ':fzf-tab:complete:__zoxide_z:*' fzf-preview 'ls -G $realpath'
 
 alias ls='ls -G'
-alias vim='nvim'
 alias c='clear'
 alias python='python3'
-alias diary='nvim ~/Documents/diary.md'
+alias diary='vim ~/Documents/diary.md'
 
 source "$HOME/.config/zsh/secrets.zsh"
 
@@ -106,7 +105,7 @@ export BUN_INSTALL="$HOME/.bun"
 export GOPATH="$HOME/go"
 export GOBIN="$GOPATH/bin"
 export PNPM_HOME="$HOME/Library/pnpm"
-export PATH="$BUN_INSTALL/bin:$HOME/.opencode/bin:$HOME/.local/bin:/usr/local/go/bin:$GOBIN:$PNPM_HOME/bin:$PATH"
+export PATH="$BUN_INSTALL/bin:$HOME/.local/bin:/usr/local/go/bin:$GOBIN:$PNPM_HOME/bin:$PATH"
 
 ZSH_AUTOSUGGEST_STRATEGY=(history completion)
 zinit light zsh-users/zsh-autosuggestions
@@ -114,3 +113,6 @@ zinit light zsh-users/zsh-syntax-highlighting
 
 eval "$(zoxide init zsh)"
 eval "$(starship init zsh)"
+
+
+alias doc="docker"

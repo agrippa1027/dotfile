@@ -17,8 +17,8 @@ echo "== Launch agents count =="
 launchctl list | wc -l | xargs echo "loaded agents/services:"
 
 echo
-echo "== Disk usage (home + config) =="
-du -sh "$HOME"/.config "$HOME" 2>/dev/null | sed 's/^/  /'
+echo "== Config disk usage =="
+du -sh "${XDG_CONFIG_HOME:-$HOME/.config}" 2>/dev/null | sed 's/^/  /'
 
 echo
 echo "== Battery + thermal snapshot =="

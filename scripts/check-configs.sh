@@ -26,14 +26,11 @@ assert_contains() {
   ok "$1"
 }
 
-require_file 'Archived AeroSpace config' "$config_root/aerospace/aerospace.toml"
 require_file 'yabai config' "$config_root/yabai/yabairc"
 require_file 'skhd config' "$config_root/skhd/skhdrc"
 require_file 'Window shortcut helper' "$config_root/skhd/wm.sh"
 require_file 'Ghostty config' "$config_root/ghostty/config"
 require_file 'SketchyBar config' "$config_root/sketchybar/sketchybarrc"
-require_file 'SketchyBar app icon font' "$config_root/sketchybar/vendor/app-font/sketchybar-app-font.ttf"
-require_file 'SketchyBar app icon map' "$config_root/sketchybar/vendor/app-font/icon_map.lua"
 require_file 'SketchyBar Lua entry point' "$config_root/sketchybar/init.lua"
 require_file 'SbarLua runtime' "$config_root/sketchybar/runtime/sketchybar.so"
 require_file 'tmux config' "$config_root/tmux/tmux.conf"
@@ -45,17 +42,16 @@ require_file 'NVM loader' '/opt/homebrew/opt/nvm/nvm.sh'
 require_file 'NVM completion' '/opt/homebrew/opt/nvm/etc/bash_completion.d/nvm'
 require_file 'Starship config' "$config_root/starship.toml"
 require_file 'Zed settings' "$config_root/zed/settings.json"
-require_file 'Yazi config' "$config_root/yazi/yazi.toml"
+require_file 'Zed keymap' "$config_root/zed/keymap.json"
 
-for required_command in yabai skhd sketchybar lua luac jq tmux zsh starship zoxide fzf yazi python3; do
+for required_command in yabai skhd sketchybar lua luac jq tmux zsh starship zoxide fzf python3; do
   require_command "$required_command"
 done
 [[ -x /Applications/Ghostty.app/Contents/MacOS/ghostty ]] || die 'Ghostty app is not installed'
 [[ -x "$config_root/sketchybar/sketchybarrc" ]] || die 'SketchyBar launcher is not executable'
 bash -n "$config_root/sketchybar/sketchybarrc"
 luac -p "$config_root"/sketchybar/*.lua "$config_root"/sketchybar/lib/*.lua \
-  "$config_root"/sketchybar/items/*.lua "$config_root"/sketchybar/items/widgets/*.lua \
-  "$config_root/sketchybar/vendor/app-font/icon_map.lua"
+  "$config_root"/sketchybar/items/*.lua "$config_root"/sketchybar/items/widgets/*.lua
 lua - "$config_root/sketchybar" <<'LUA'
 local root = arg[1]
 package.path = root .. "/?.lua;" .. package.path
@@ -66,15 +62,32 @@ LUA
 ok 'SketchyBar Lua syntax and runtime validate'
 [[ "$HOME/.zshrc" -ef "$config_root/.zshrc" ]] || die "$HOME/.zshrc is not linked to the managed config"
 
-python3 - "$config_root/aerospace/aerospace.toml" "$config_root/skhd/skhdrc" <<'PY'
+python3 - "$config_root/skhd/skhdrc" "$config_root/starship.toml" "$config_root/zed/settings.json" "$config_root/zed/keymap.json" <<'PY'
+import json
+import re
 import sys
 import tomllib
 
-with open(sys.argv[1], "rb") as config_file:
+with open(sys.argv[2], "rb") as config_file:
     tomllib.load(config_file)
 
+def jsonc(path):
+    with open(path) as config_file:
+        text = config_file.read()
+    # Preserve quoted strings while removing comments and trailing commas.
+    text = re.sub(r'"(?:\\.|[^"\\])*"|//[^\n]*|/\*[\s\S]*?\*/',
+                  lambda match: match[0] if match[0].startswith('"') else '', text)
+    text = re.sub(r'"(?:\\.|[^"\\])*"|,\s*(?=[}\]])',
+                  lambda match: match[0] if match[0].startswith('"') else '', text)
+    return json.loads(text)
+
+assert isinstance(jsonc(sys.argv[3]), dict), "Zed settings must be an object"
+keymap = jsonc(sys.argv[4])
+assert isinstance(keymap, list), "Zed keymap must be an array"
+assert all(isinstance(context, dict) and isinstance(context.get("bindings"), dict) for context in keymap)
+
 bindings = {}
-for line in open(sys.argv[2]):
+for line in open(sys.argv[1]):
     line = line.strip()
     if not line or line.startswith("#"):
         continue
@@ -91,7 +104,7 @@ assert all('cmd' not in key.split(' - ')[0] for key, action in bindings.items() 
 PY
 bash -n "$config_root/yabai/yabairc" "$config_root/yabai/setup-spaces.sh" \
   "$config_root/yabai/setup-scripting-addition.sh" "$config_root/skhd/wm.sh"
-ok 'Archived AeroSpace TOML, yabai shell config, and skhd bindings validate'
+ok 'Starship TOML, Zed JSONC, yabai shell config, and skhd bindings validate'
 
 /Applications/Ghostty.app/Contents/MacOS/ghostty \
   +validate-config --config-file="$config_root/ghostty/config" >/dev/null 2>&1

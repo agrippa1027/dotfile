@@ -13,25 +13,22 @@ available to apps. Option+Delete also keeps its native word-deletion behavior.
 | ⌘ ⇧ E | Zed |
 | ⌘ ⇧ L | Append a timestamp to today's log and open it in a floating Zed window |
 | ⌘ ⇧ N | Neovim terminal when installed; Zed otherwise |
-| ⌘ ⇧ O | Obsidian |
 | ⌘ ⇧ A | ChatGPT website |
-| ⌥ K | This shortcut reference |
 | ⌃ ⌥ L | Lock the screen |
 | ⌘ ⌃ A / N / B / P | Toggle audio / network / Bluetooth / power panel |
 | ⌘ ⌃ ⌥ D | Toggle calendar panel |
 | ⌘ ⌃ Escape | Close the active panel |
-| ⌥ arrows | Focus a window; cross to the adjacent display at an edge |
-| ⌥ ⇧ arrows | Swap tiled windows |
+| ⌥ H / J / K / L | Focus west / south / north / east; cross to the adjacent display at an edge |
+| ⌥ ⇧ H / J / K / L | Swap tiled windows west / south / north / east |
 | ⌥ 1…9, 0, A | Focus the named Space |
 | ⌥ ⇧ 1…9, 0 | Send the window to that Space and follow |
 | ⌃ ⌥ ⇧ 1…9, 0 | Send the window there without following |
-| ⌥ N / ⌥ P | Next / previous Space, wrapping and skipping native fullscreen |
+| ⌥ N / ⌥ P | Next / previous managed Space in `1–9, 0, a` order, wrapping across monitors |
 | ⌥ Escape | Previously focused Space |
 | ⌥ Tab | Previously focused Space |
 | ⌥ ⇧ Tab | Move the entire current Space to the next monitor and follow it |
 | ⌃ ⌥ Tab / ⌃ ⌥ ⇧ Tab | Next / previous monitor |
 | ⌥ T | Toggle floating |
-| ⌥ J | Toggle tile split orientation |
 | ⌥ F | Fill the current Space; toggle again to restore |
 | ⌃ ⌥ F | Native macOS fullscreen |
 | ⌥ O | Toggle sticky and floating together |
@@ -48,9 +45,15 @@ available to apps. Option+Delete also keeps its native word-deletion behavior.
 Space `a` is available with Option+A, through SketchyBar, and desktop cycling.
 Command+A stays Select All. Native Space labels use the internal prefix `ws-`
 (for example, `ws-0`); shortcuts and the bar show only the final character.
+Option+N/P follows that label order rather than macOS's display-grouped native
+indices. It skips native fullscreen and unmanaged desktops. Native ordering is
+also kept strict within each monitor without changing monitor assignments;
+unnamed desktops are retained after the managed Spaces. See the
+[ordering checks and repair commands](../yabai/README.md#strict-space-ordering).
 Moving a Space preserves its windows as a separate desktop on the destination
 monitor. When moving a display's last Space, macOS requires an empty desktop
-to remain behind; the helper creates one automatically.
+to remain behind; the helper creates one automatically. The destination's
+workspace order is repaired after the move.
 Swapping and split/zoom controls operate on tiled
 windows; toggle a floating window back into tiling first when needed.
 

@@ -3,14 +3,13 @@
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 root="${XDG_CONFIG_HOME:-$HOME/.config}/yabai"
 
-# Keep AeroSpace in charge until Accessibility and the scripting addition are ready.
-if [[ -e "$root/.setup-pending" ]]; then
-  yabai -m config layout float
-  exit 0
-fi
-
 # Feature checks below will expose an unavailable scripting addition.
 sudo -n /opt/homebrew/bin/yabai --load-sa || true
+
+# Mission Control must not reorder desktops by recent use.
+if [[ "$(/usr/bin/defaults read com.apple.dock mru-spaces 2>/dev/null)" != 0 ]]; then
+  /usr/bin/defaults write com.apple.dock mru-spaces -bool false
+fi
 
 yabai -m config layout bsp
 yabai -m config split_type auto
@@ -48,22 +47,18 @@ yabai -m config window_animation_easing ease_out_cubic
 
 "$root/setup-spaces.sh" || exit 1
 
-# yabai rejects numeric labels, so keep their display names behind a ws- prefix.
-space_index() {
-  yabai -m query --spaces | jq -er --arg label "ws-$1" 'first(.[] | select(.label == $label) | .index)'
-}
-
 # Remove only our own definitions when reloading.
 for label in browser editor notes books api chat terminal dialogs scratch media-opaque; do
   yabai -m rule --remove "rice-$label" 2>/dev/null || true
 done
-yabai -m rule --add label=rice-browser app='^(Firefox|Google Chrome)$' space="$(space_index 1)"
-yabai -m rule --add label=rice-editor app='^Zed$' space="$(space_index 2)"
-yabai -m rule --add label=rice-notes app='^Obsidian$' space="$(space_index 3)"
-yabai -m rule --add label=rice-books app='^calibre$' space="$(space_index 4)"
-yabai -m rule --add label=rice-api app='^(Bruno|bruno)$' space="$(space_index 6)"
-yabai -m rule --add label=rice-chat app='^Discord$' space="$(space_index 7)"
-yabai -m rule --add label=rice-terminal app='^Ghostty$' title!='^Scratchpad$' space="^$(space_index 9)"
+# Stable labels keep routing correct when native indices change after a move.
+yabai -m rule --add label=rice-browser app='^(Firefox|Google Chrome)$' space=ws-1
+yabai -m rule --add label=rice-editor app='^Zed$' space=ws-2
+yabai -m rule --add label=rice-notes app='^Obsidian$' space=ws-3
+yabai -m rule --add label=rice-books app='^calibre$' space=ws-4
+yabai -m rule --add label=rice-api app='^(Bruno|bruno)$' space=ws-6
+yabai -m rule --add label=rice-chat app='^Discord$' space=ws-7
+yabai -m rule --add label=rice-terminal app='^Ghostty$' title!='^Scratchpad$' space=^ws-9
 yabai -m rule --add label=rice-dialogs app='^(System Settings|System Preferences|Activity Monitor|Finder|Messages|WhatsApp|Font Book|Raycast|BetterDisplay)$' manage=off
 yabai -m rule --add label=rice-scratch app='^Ghostty$' title='^Scratchpad$' manage=off scratchpad=scratch grid=10:10:1:1:8:8 opacity=1.0
 
@@ -73,22 +68,31 @@ yabai -m rule --apply rice-media-opaque
 
 # Workspace labels use app names, not window titles. Remove the old noisy hook on reload.
 yabai -m signal --remove rice-window_title_changed 2>/dev/null || true
-for event in window_created window_destroyed window_focused window_moved window_minimized window_deminimized space_changed space_created space_destroyed display_changed display_removed display_moved display_resized system_woke; do
+for event in window_created window_destroyed window_focused window_moved window_minimized window_deminimized space_changed space_created space_destroyed display_changed display_removed display_moved display_resized system_woke mission_control_exit; do
   yabai -m signal --remove "rice-$event" 2>/dev/null || true
+  case "$event" in
+    space_changed|space_created|space_destroyed|display_removed|display_moved|system_woke|mission_control_exit)
+      # shellcheck disable=SC2016
+      signal_action='/opt/homebrew/bin/python3 "$HOME/.config/yabai/order-spaces.py"; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+      ;;
+    *)
+      # shellcheck disable=SC2016
+      signal_action='"$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+      ;;
+  esac
   # Expand HOME when the signal runs.
-  # shellcheck disable=SC2016
   yabai -m signal --add label="rice-$event" event="$event" \
-    action='"$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+    action="$signal_action"
 done
 yabai -m signal --remove rice-display_added 2>/dev/null || true
-# Reconcile Spaces after docking; normal config reloads preserve manual placement.
+# Keep existing monitor assignments after docking, and sort within each display.
 # shellcheck disable=SC2016
 yabai -m signal --add label=rice-display_added event=display_added \
-  action='"$HOME/.config/yabai/setup-spaces.sh" --arrange; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+  action='"$HOME/.config/yabai/setup-spaces.sh"; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
 yabai -m signal --remove rice-dock 2>/dev/null || true
 # Expand HOME when the signal runs.
   # shellcheck disable=SC2016
 yabai -m signal --add label=rice-dock event=dock_did_restart \
-  action='sudo -n /opt/homebrew/bin/yabai --load-sa; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
+  action='sudo -n /opt/homebrew/bin/yabai --load-sa; /opt/homebrew/bin/python3 "$HOME/.config/yabai/order-spaces.py"; "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change'
 
 "$HOME/.local/bin/sketchybar" --trigger yabai_workspace_change
